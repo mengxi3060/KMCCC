@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using MinecraftLauncher.Core.Services;
-using MinecraftLauncher.Core.Models;
+using MinecraftLauncher.Core.Domain.Interfaces;
+using MinecraftLauncher.Core.DTOs.Launch;
 
 namespace MinecraftLauncher.API.Controllers
 {
@@ -112,7 +112,7 @@ namespace MinecraftLauncher.API.Controllers
                 // 验证 Java 路径
                 if (!string.IsNullOrEmpty(request.JavaPath))
                 {
-                    var javaExists = File.Exists(request.JavaPath);
+                    var javaExists = System.IO.File.Exists(request.JavaPath);
                     var javaValid = javaExists ? await _javaService.ValidateJavaPath(request.JavaPath) : false;
 
                     result.Validations.Add(new ValidationItem

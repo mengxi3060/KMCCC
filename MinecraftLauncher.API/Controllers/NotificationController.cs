@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MinecraftLauncher.Core.Domain.Entities;
 using MinecraftLauncher.Core.Domain.Interfaces;
 using MinecraftLauncher.Core.DTOs.Common;
 using MinecraftLauncher.Core.DTOs.Report;
@@ -26,13 +27,13 @@ public class NotificationController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<IEnumerable>>>> GetNotifications(
+    public async Task<ActionResult<ApiResponse<IEnumerable<Notification>>>> GetNotifications(
         [FromQuery] int pageIndex = 0,
         [FromQuery] int pageSize = 20)
     {
         var userId = GetCurrentUserId();
         var notifications = await _notificationService.GetUserNotifications(userId, pageIndex, pageSize);
-        return Ok(ApiResponse<IEnumerable>.Ok(notifications));
+        return Ok(ApiResponse<IEnumerable<Notification>>.Ok(notifications));
     }
 
     [HttpGet("unread-count")]

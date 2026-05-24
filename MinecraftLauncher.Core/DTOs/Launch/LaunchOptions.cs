@@ -1,3 +1,5 @@
+using MinecraftLauncher.Core.DTOs.Auth;
+
 namespace MinecraftLauncher.Core.DTOs.Launch;
 
 public class LaunchOptions

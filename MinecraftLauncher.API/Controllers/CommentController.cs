@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using MinecraftLauncher.Core.Domain.Entities;
 using MinecraftLauncher.Core.Domain.Interfaces;
 using MinecraftLauncher.Core.DTOs.Comment;
 using MinecraftLauncher.Core.DTOs.Common;
@@ -17,13 +18,13 @@ public class CommentController : ControllerBase
     }
 
     [HttpGet("resource/{resourceId}")]
-    public async Task<ActionResult<ApiResponse<IEnumerable>>> GetComments(
+    public async Task<ActionResult<ApiResponse<IEnumerable<Comment>>>> GetComments(
         Guid resourceId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
         var comments = await _commentService.GetComments(resourceId, page, pageSize);
-        return Ok(ApiResponse<IEnumerable>.Ok(comments));
+        return Ok(ApiResponse<IEnumerable<Comment>>.Ok(comments));
     }
 
     [HttpPost]
@@ -62,7 +63,7 @@ public class CommentController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ApiResponse.Fail(ex.Message));
+            return Forbid();
         }
     }
 

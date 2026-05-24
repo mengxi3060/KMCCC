@@ -69,28 +69,29 @@ public class ReviewService : IReviewService
         
         var totalCount = await resourcesQuery.CountAsync();
         
-        var resources = await resourcesQuery
+        var rawResources = await resourcesQuery
             .Skip((query.PageIndex - 1) * query.PageSize)
             .Take(query.PageSize)
-            .Select(r => new ReviewQueueItem
-            {
-                ResourceId = r.Id,
-                Name = r.Name,
-                Type = r.Type,
-                AuthorName = r.Author.Profile != null ? r.Author.Profile.DisplayName : r.Author.Username,
-                AuthorViolationCount = r.Author.ViolationCount,
-                Description = r.Description,
-                Tags = JsonSerializer.Deserialize<List<string>>(r.Tags ?? "[]") ?? new List<string>(),
-                FileSize = r.FileSize,
-                CreatedAt = r.CreatedAt,
-                Compatibilities = r.Compatibilities.Select(c => new CompatibilityInfo
-                {
-                    GameVersion = c.GameVersion,
-                    LoaderType = c.LoaderType.ToString(),
-                    IsVerified = c.IsVerified
-                }).ToList()
-            })
             .ToListAsync();
+
+        var resources = rawResources.Select(r => new ReviewQueueItem
+        {
+            ResourceId = r.Id,
+            Name = r.Name,
+            Type = r.Type,
+            AuthorName = r.Author.Profile != null ? r.Author.Profile.DisplayName : r.Author.Username,
+            AuthorViolationCount = r.Author.ViolationCount,
+            Description = r.Description,
+            Tags = JsonSerializer.Deserialize<List<string>>(r.Tags ?? "[]") ?? new List<string>(),
+            FileSize = r.FileSize,
+            CreatedAt = r.CreatedAt,
+            Compatibilities = r.Compatibilities.Select(c => new CompatibilityInfo
+            {
+                GameVersion = c.GameVersion,
+                LoaderType = c.LoaderType.ToString(),
+                IsVerified = c.IsVerified
+            }).ToList()
+        }).ToList();
         
         return new ReviewQueueResult
         {
@@ -115,21 +116,22 @@ public class ReviewService : IReviewService
             return null;
         }
         
-        var reviewHistory = await _context.ReviewRecords
+        var rawReviewHistory = await _context.ReviewRecords
             .Include(r => r.Reviewer)
             .Where(r => r.ResourceId == resourceId)
             .OrderByDescending(r => r.CreatedAt)
-            .Select(r => new ReviewHistoryItem
-            {
-                Id = r.Id,
-                ReviewerName = r.Reviewer.Profile != null ? r.Reviewer.Profile.DisplayName : r.Reviewer.Username,
-                Action = r.Action.ToString(),
-                Comment = r.Comment,
-                CheckResults = r.CheckResults != null ? 
-                    JsonSerializer.Deserialize<Dictionary<string, bool>>(r.CheckResults) : null,
-                CreatedAt = r.CreatedAt
-            })
             .ToListAsync();
+
+        var reviewHistory = rawReviewHistory.Select(r => new ReviewHistoryItem
+        {
+            Id = r.Id,
+            ReviewerName = r.Reviewer.Profile != null ? r.Reviewer.Profile.DisplayName : r.Reviewer.Username,
+            Action = r.Action.ToString(),
+            Comment = r.Comment,
+            CheckResults = r.CheckResults != null ? 
+                JsonSerializer.Deserialize<Dictionary<string, bool>>(r.CheckResults) : null,
+            CreatedAt = r.CreatedAt
+        }).ToList();
         
         return new ReviewDetail
         {
@@ -371,20 +373,21 @@ public class ReviewService : IReviewService
     
     public async Task<IEnumerable<ReviewHistoryItem>> GetReviewHistory(Guid resourceId)
     {
-        return await _context.ReviewRecords
+        var rawRecords = await _context.ReviewRecords
             .Include(r => r.Reviewer)
             .Where(r => r.ResourceId == resourceId)
             .OrderByDescending(r => r.CreatedAt)
-            .Select(r => new ReviewHistoryItem
-            {
-                Id = r.Id,
-                ReviewerName = r.Reviewer.Profile != null ? r.Reviewer.Profile.DisplayName : r.Reviewer.Username,
-                Action = r.Action.ToString(),
-                Comment = r.Comment,
-                CheckResults = r.CheckResults != null ? 
-                    JsonSerializer.Deserialize<Dictionary<string, bool>>(r.CheckResults) : null,
-                CreatedAt = r.CreatedAt
-            })
             .ToListAsync();
+
+        return rawRecords.Select(r => new ReviewHistoryItem
+        {
+            Id = r.Id,
+            ReviewerName = r.Reviewer.Profile != null ? r.Reviewer.Profile.DisplayName : r.Reviewer.Username,
+            Action = r.Action.ToString(),
+            Comment = r.Comment,
+            CheckResults = r.CheckResults != null ? 
+                JsonSerializer.Deserialize<Dictionary<string, bool>>(r.CheckResults) : null,
+            CreatedAt = r.CreatedAt
+        });
     }
 }

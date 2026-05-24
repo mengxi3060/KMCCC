@@ -69,53 +69,60 @@ public class ReportService : IReportService
     
     public async Task<IEnumerable<ReportListItem>> GetPendingReports(int pageIndex, int pageSize)
     {
-        return await _context.Reports
+        var rawReports = await _context.Reports
             .Include(r => r.Resource)
             .Include(r => r.Reporter)
             .Where(r => r.Status == ReportStatus.Pending)
             .OrderBy(r => r.CreatedAt)
             .Skip(pageIndex * pageSize)
             .Take(pageSize)
-            .Select(r => new ReportListItem
-            {
-                Id = r.Id,
-                ResourceId = r.ResourceId,
-                ResourceName = r.Resource.Name,
-                ReporterName = r.Reporter.Profile != null ? r.Reporter.Profile.DisplayName : r.Reporter.Username,
-                Type = r.Type,
-                Description = r.Description,
-                EvidenceUrls = r.EvidenceUrls != null ? 
-                    JsonSerializer.Deserialize<List<string>>(r.EvidenceUrls) : null,
-                CreatedAt = r.CreatedAt
-            })
             .ToListAsync();
+
+        return rawReports.Select(r => new ReportListItem
+        {
+            Id = r.Id,
+            ResourceId = r.ResourceId,
+            ResourceName = r.Resource.Name,
+            ReporterName = r.Reporter.Profile != null ? r.Reporter.Profile.DisplayName : r.Reporter.Username,
+            Type = r.Type,
+            Description = r.Description,
+            EvidenceUrls = r.EvidenceUrls != null ? 
+                JsonSerializer.Deserialize<List<string>>(r.EvidenceUrls) : null,
+            CreatedAt = r.CreatedAt
+        });
     }
     
     public async Task<ReportDetail> GetReportDetail(Guid reportId)
     {
-        return await _context.Reports
+        var report = await _context.Reports
             .Include(r => r.Resource)
             .ThenInclude(res => res.Author)
             .Include(r => r.Reporter)
             .Where(r => r.Id == reportId)
-            .Select(r => new ReportDetail
-            {
-                Id = r.Id,
-                ResourceId = r.ResourceId,
-                ResourceName = r.Resource.Name,
-                ResourceAuthorName = r.Resource.Author.Profile != null ? r.Resource.Author.Profile.DisplayName : r.Resource.Author.Username,
-                ReporterId = r.ReporterId,
-                ReporterName = r.Reporter.Profile != null ? r.Reporter.Profile.DisplayName : r.Reporter.Username,
-                Type = r.Type,
-                Description = r.Description,
-                EvidenceUrls = r.EvidenceUrls != null ? 
-                    JsonSerializer.Deserialize<List<string>>(r.EvidenceUrls) : null,
-                Status = r.Status,
-                Resolution = r.Resolution,
-                CreatedAt = r.CreatedAt,
-                ResolvedAt = r.ResolvedAt
-            })
             .FirstOrDefaultAsync();
+
+        if (report == null)
+        {
+            return null;
+        }
+
+        return new ReportDetail
+        {
+            Id = report.Id,
+            ResourceId = report.ResourceId,
+            ResourceName = report.Resource.Name,
+            ResourceAuthorName = report.Resource.Author.Profile != null ? report.Resource.Author.Profile.DisplayName : report.Resource.Author.Username,
+            ReporterId = report.ReporterId,
+            ReporterName = report.Reporter.Profile != null ? report.Reporter.Profile.DisplayName : report.Reporter.Username,
+            Type = report.Type,
+            Description = report.Description,
+            EvidenceUrls = report.EvidenceUrls != null ? 
+                JsonSerializer.Deserialize<List<string>>(report.EvidenceUrls) : null,
+            Status = report.Status,
+            Resolution = report.Resolution,
+            CreatedAt = report.CreatedAt,
+            ResolvedAt = report.ResolvedAt
+        };
     }
     
     public async Task<bool> ResolveReport(Guid reportId, ReportResolution resolution, Guid resolvedBy)

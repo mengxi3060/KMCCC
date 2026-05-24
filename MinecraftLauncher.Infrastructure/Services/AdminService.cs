@@ -146,7 +146,7 @@ public class AdminService : IAdminService
         return true;
     }
 
-    public async Task<ResourceListResult> GetAllResources(ResourceManagementQuery query)
+    public async Task<ResourceManagementResult> GetAllResources(ResourceManagementQuery query)
     {
         var queryable = _context.Resources
             .Include(r => r.Author)
@@ -179,11 +179,26 @@ public class AdminService : IAdminService
             .OrderByDescending(r => r.CreatedAt)
             .Skip((query.PageIndex - 1) * query.PageSize)
             .Take(query.PageSize)
+            .Select(r => new ResourceManagementItem
+            {
+                Id = r.Id,
+                Name = r.Name,
+                Type = r.Type.ToString(),
+                AuthorName = r.Author.Profile != null ? r.Author.Profile.DisplayName : r.Author.Username,
+                AuthorId = r.AuthorId,
+                Status = r.Status.ToString(),
+                DownloadCount = r.DownloadCount,
+                LikeCount = r.LikeCount,
+                IsTopped = r.IsTopped,
+                IsRecommended = r.IsRecommended,
+                CreatedAt = r.CreatedAt,
+                UpdatedAt = r.UpdatedAt
+            })
             .ToListAsync();
 
-        return new ResourceListResult
+        return new ResourceManagementResult
         {
-            Items = items,
+            Resources = items,
             TotalCount = totalCount,
             PageIndex = query.PageIndex,
             PageSize = query.PageSize
@@ -270,11 +285,14 @@ public class AdminService : IAdminService
 
     public async Task<AdminDashboardStats> GetDashboardStats()
     {
+        var today = DateTime.UtcNow.Date;
+        var weekAgo = DateTime.UtcNow.AddDays(-7);
+
         var stats = new AdminDashboardStats
         {
             TotalUsers = await _context.Users.CountAsync(),
             ActiveUsersToday = await _context.Users
-                .Where(u => u.LastLoginAt >= DateTime.UtcNow.Date)
+                .Where(u => u.LastLoginAt >= today)
                 .CountAsync(),
             TotalResources = await _context.Resources.CountAsync(),
             PendingReviews = await _context.Resources
@@ -290,7 +308,7 @@ public class AdminService : IAdminService
                 .CountAsync(),
             TotalViolations = await _context.Violations.CountAsync(),
             RecentViolations = await _context.Violations
-                .Where(v => v.CreatedAt >= DateTime.UtcNow.AddDays(-7))
+                .Where(v => v.CreatedAt >= weekAgo)
                 .CountAsync()
         };
 

@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MinecraftLauncher.Core.DTOs.Upload;
-using MinecraftLauncher.Core.Entities;
-using MinecraftLauncher.Core.Interfaces;
+using MinecraftLauncher.Core.Domain.Entities;
+using MinecraftLauncher.Core.Domain.Interfaces;
 using MinecraftLauncher.Infrastructure.Data;
 using System.IO.Compression;
 using System.Security.Cryptography;

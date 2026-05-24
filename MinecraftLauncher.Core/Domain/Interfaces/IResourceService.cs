@@ -1,5 +1,5 @@
 using MinecraftLauncher.Core.DTOs.Resource;
-using MinecraftLauncher.Core.Entities;
+using MinecraftLauncher.Core.Domain.Entities;
 
 namespace MinecraftLauncher.Core.Domain.Interfaces;
 

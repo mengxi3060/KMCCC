@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MinecraftLauncher.Core.DTOs.Resource;
-using MinecraftLauncher.Core.Entities;
-using MinecraftLauncher.Core.Interfaces;
+using MinecraftLauncher.Core.Domain.Entities;
+using MinecraftLauncher.Core.Domain.Interfaces;
 using MinecraftLauncher.Infrastructure.Data;
 using System.Text.Json;
 
@@ -68,27 +68,28 @@ namespace MinecraftLauncher.Infrastructure.Services
             
             var totalCount = await resourcesQuery.CountAsync();
             
-            var resources = await resourcesQuery
+            var rawResources = await resourcesQuery
                 .Skip(query.PageIndex * query.PageSize)
                 .Take(query.PageSize)
-                .Select(r => new ResourceListItem
-                {
-                    Id = r.Id,
-                    Name = r.Name,
-                    Type = r.Type,
-                    AuthorName = r.Author.Profile != null ? r.Author.Profile.DisplayName : r.Author.Username,
-                    Description = r.Description,
-                    Tags = JsonSerializer.Deserialize<List<string>>(r.Tags ?? "[]") ?? new List<string>(),
-                    DownloadCount = r.DownloadCount,
-                    LikeCount = r.LikeCount,
-                    CreatedAt = r.CreatedAt,
-                    Compatibilities = r.Compatibilities.Select(c => new CompatibilityInfo
-                    {
-                        GameVersion = c.GameVersion,
-                        LoaderType = c.LoaderType
-                    }).ToList()
-                })
                 .ToListAsync();
+
+            var resources = rawResources.Select(r => new ResourceListItem
+            {
+                Id = r.Id,
+                Name = r.Name,
+                Type = r.Type,
+                AuthorName = r.Author.Profile != null ? r.Author.Profile.DisplayName : r.Author.Username,
+                Description = r.Description,
+                Tags = JsonSerializer.Deserialize<List<string>>(r.Tags ?? "[]") ?? new List<string>(),
+                DownloadCount = r.DownloadCount,
+                LikeCount = r.LikeCount,
+                CreatedAt = r.CreatedAt,
+                Compatibilities = r.Compatibilities.Select(c => new CompatibilityInfo
+                {
+                    GameVersion = c.GameVersion,
+                    LoaderType = c.LoaderType
+                }).ToList()
+            }).ToList();
             
             return new ResourceListResult
             {
@@ -131,7 +132,7 @@ namespace MinecraftLauncher.Infrastructure.Services
                 LikeCount = resource.LikeCount,
                 Status = resource.Status,
                 CreatedAt = resource.CreatedAt,
-                UpdatedAt = resource.UpdatedAt,
+                UpdatedAt = resource.UpdatedAt ?? DateTime.UtcNow,
                 IsTopped = resource.IsTopped,
                 IsRecommended = resource.IsRecommended,
                 Compatibilities = resource.Compatibilities.Select(c => new CompatibilityInfo
@@ -156,7 +157,7 @@ namespace MinecraftLauncher.Infrastructure.Services
         
         public async Task<Resource> CreateResource(CreateResourceRequest request, Guid authorId)
         {
-            var resource = new Core.Entities.Resource
+            var resource = new Resource
             {
                 Id = Guid.NewGuid(),
                 Name = request.Name,
@@ -169,8 +170,14 @@ namespace MinecraftLauncher.Infrastructure.Services
                 FilePath = request.FilePath,
                 FileSize = request.FileSize,
                 FileHash = request.FileHash,
+                DownloadCount = 0,
+                LikeCount = 0,
                 Status = Core.Domain.Enums.ResourceStatus.Pending,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                IsTopped = false,
+                IsRecommended = false,
+                Compatibilities = new List<ResourceCompatibility>(),
+                Comments = new List<Comment>()
             };
             
             if (request.Compatibilities != null)
@@ -182,7 +189,7 @@ namespace MinecraftLauncher.Infrastructure.Services
                         Id = Guid.NewGuid(),
                         ResourceId = resource.Id,
                         GameVersion = comp.GameVersion,
-                        LoaderType = comp.LoaderType,
+                        LoaderType = comp.LoaderType ?? Core.Domain.Enums.LoaderType.None,
                         IsVerified = false
                     });
                 }
@@ -243,7 +250,7 @@ namespace MinecraftLauncher.Infrastructure.Services
                         Id = Guid.NewGuid(),
                         ResourceId = resource.Id,
                         GameVersion = comp.GameVersion,
-                        LoaderType = comp.LoaderType,
+                        LoaderType = comp.LoaderType ?? Core.Domain.Enums.LoaderType.None,
                         IsVerified = false
                     });
                 }

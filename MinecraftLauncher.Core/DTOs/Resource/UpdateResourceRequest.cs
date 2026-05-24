@@ -9,5 +9,5 @@ public class UpdateResourceRequest
     public string? Tags { get; set; }
     public string? Screenshots { get; set; }
     public string? Copyright { get; set; }
-    public List<CompatibilityInput>? Compatibilities { get; set; }
+    public List<CompatibilityInfo>? Compatibilities { get; set; }
 }

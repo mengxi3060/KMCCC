@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MinecraftLauncher.Core.Domain.Entities;
 using MinecraftLauncher.Core.Domain.Interfaces;
 using MinecraftLauncher.Core.DTOs.Common;
 using System.Security.Claims;
@@ -50,10 +51,10 @@ public class ViolationController : ControllerBase
     }
 
     [HttpGet("user/{userId}")]
-    public async Task<ActionResult<ApiResponse<IEnumerable>>> GetUserViolations(Guid userId)
+    public async Task<ActionResult<ApiResponse<IEnumerable<Violation>>>> GetUserViolations(Guid userId)
     {
         var violations = await _violationService.GetUserViolations(userId);
-        return Ok(ApiResponse<IEnumerable>.Ok(violations));
+        return Ok(ApiResponse<IEnumerable<Violation>>.Ok(violations));
     }
 
     [HttpPost("user/{userId}/lift-restriction")]

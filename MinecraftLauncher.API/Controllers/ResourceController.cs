@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using MinecraftLauncher.Core.Domain.Entities;
 using MinecraftLauncher.Core.Domain.Enums;
 using MinecraftLauncher.Core.Domain.Interfaces;
 using MinecraftLauncher.Core.DTOs.Common;
@@ -68,7 +69,7 @@ public class ResourceController : ControllerBase
     {
         try
         {
-            var resource = await _resourceService.CreateResource(request);
+            var resource = await _resourceService.CreateResource(request, Guid.Empty);
             return Ok(ApiResponse.Ok("资源创建成功"));
         }
         catch (Exception ex)
@@ -82,7 +83,7 @@ public class ResourceController : ControllerBase
     {
         try
         {
-            var resource = await _resourceService.UpdateResource(resourceId, request);
+            var resource = await _resourceService.UpdateResource(resourceId, request, Guid.Empty);
             return Ok(ApiResponse.Ok("资源更新成功"));
         }
         catch (Exception ex)
@@ -94,7 +95,7 @@ public class ResourceController : ControllerBase
     [HttpDelete("{resourceId}")]
     public async Task<ActionResult<ApiResponse>> DeleteResource(Guid resourceId)
     {
-        var success = await _resourceService.DeleteResource(resourceId);
+        var success = await _resourceService.DeleteResource(resourceId, Guid.Empty);
 
         if (!success)
         {
@@ -105,10 +106,10 @@ public class ResourceController : ControllerBase
     }
 
     [HttpGet("my")]
-    public async Task<ActionResult<ApiResponse<IEnumerable>>>> GetMyResources()
+    public async Task<ActionResult<ApiResponse<IEnumerable<Resource>>>> GetMyResources()
     {
-        var resources = await _resourceService.GetMyResources();
-        return Ok(ApiResponse<IEnumerable>.Ok(resources));
+        var resources = await _resourceService.GetMyResources(Guid.Empty);
+        return Ok(ApiResponse<IEnumerable<Resource>>.Ok(resources));
     }
 
     [HttpPost("upload/init")]
@@ -151,7 +152,7 @@ public class ResourceController : ControllerBase
         Guid resourceId,
         [FromQuery] string targetPath)
     {
-        var result = await _downloadService.DownloadResource(resourceId, targetPath);
+        var result = await _downloadService.DownloadResource(resourceId, Guid.Empty, targetPath);
         return Ok(ApiResponse<DownloadResult>.Ok(result));
     }
 
@@ -160,7 +161,7 @@ public class ResourceController : ControllerBase
         Guid resourceId,
         [FromQuery] string gameRootPath)
     {
-        var result = await _downloadService.InstallResource(resourceId, gameRootPath);
+        var result = await _downloadService.InstallResource(resourceId, Guid.Empty, gameRootPath);
         return Ok(ApiResponse<InstallResult>.Ok(result));
     }
 }

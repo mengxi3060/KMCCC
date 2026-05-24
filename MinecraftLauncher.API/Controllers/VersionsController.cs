@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using MinecraftLauncher.Core.Services;
+using MinecraftLauncher.Core.Domain.Interfaces;
 
 namespace MinecraftLauncher.API.Controllers
 {

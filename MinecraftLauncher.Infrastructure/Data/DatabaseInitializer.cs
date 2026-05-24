@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MinecraftLauncher.Core.Entities;
+using MinecraftLauncher.Core.Domain.Entities;
 
 namespace MinecraftLauncher.Infrastructure.Data
 {

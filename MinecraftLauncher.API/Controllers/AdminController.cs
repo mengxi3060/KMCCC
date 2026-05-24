@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MinecraftLauncher.Core.Domain.Entities;
 using MinecraftLauncher.Core.Domain.Interfaces;
 using MinecraftLauncher.Core.DTOs.Admin;
 using MinecraftLauncher.Core.DTOs.Common;
@@ -98,7 +99,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("resources")]
-    public async Task<ActionResult<ApiResponse<ResourceListResult>>> GetAllResources(
+    public async Task<ActionResult<ApiResponse<ResourceManagementResult>>> GetAllResources(
         [FromQuery] int? status,
         [FromQuery] Guid? authorId,
         [FromQuery] DateTime? startDate,
@@ -117,7 +118,7 @@ public class AdminController : ControllerBase
         };
 
         var result = await _adminService.GetAllResources(query);
-        return Ok(ApiResponse<ResourceListResult>.Ok(result));
+        return Ok(ApiResponse<ResourceManagementResult>.Ok(result));
     }
 
     [HttpPut("resources/{resourceId}/top")]
@@ -169,7 +170,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("audit-logs")]
-    public async Task<ActionResult<ApiResponse<IEnumerable>>> GetAuditLogs(
+    public async Task<ActionResult<ApiResponse<IEnumerable<AuditLog>>>> GetAuditLogs(
         [FromQuery] Guid? userId,
         [FromQuery] string? action,
         [FromQuery] string? targetType,
@@ -192,7 +193,7 @@ public class AdminController : ControllerBase
         };
 
         var logs = await _auditLogService.GetLogs(query);
-        return Ok(ApiResponse<IEnumerable>.Ok(logs));
+        return Ok(ApiResponse<IEnumerable<AuditLog>>.Ok(logs));
     }
 
     [HttpGet("audit-logs/stats")]

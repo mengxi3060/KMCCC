@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MinecraftLauncher.Core.DTOs.Download;
 using MinecraftLauncher.Core.DTOs.Resource;
-using MinecraftLauncher.Core.Entities;
-using MinecraftLauncher.Core.Interfaces;
+using MinecraftLauncher.Core.Domain.Entities;
+using MinecraftLauncher.Core.Domain.Interfaces;
 using MinecraftLauncher.Infrastructure.Data;
 
 namespace MinecraftLauncher.Infrastructure.Services

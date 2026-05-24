@@ -1,6 +1,8 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using MinecraftLauncher.Core.Domain.Interfaces;
+using MinecraftLauncher.Infrastructure.Data;
 using MinecraftLauncher.Infrastructure.Services;
 
 namespace MinecraftLauncher.API.Middleware;
@@ -37,7 +39,7 @@ public static class JwtAuthenticationExtensions
 
         services.AddScoped<IAuthService>(provider =>
         {
-            var context = provider.GetRequiredService<MinecraftLauncher.Infrastructure.Data.AppDbContext>();
+            var context = provider.GetRequiredService<AppDbContext>();
             return new AuthService(context, jwtSecret, jwtIssuer);
         });
 

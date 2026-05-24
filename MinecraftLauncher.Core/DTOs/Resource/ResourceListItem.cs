@@ -35,10 +35,4 @@ public class CommentInfo
     public DateTime CreatedAt { get; set; }
 }
 
-public enum SortBy
-{
-    Newest,
-    Popular,
-    Downloads,
-    Rating
-}
+
