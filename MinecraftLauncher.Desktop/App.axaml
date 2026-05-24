@@ -4,41 +4,10 @@
              RequestedThemeVariant="Dark">
     <Application.Styles>
         <FluentTheme />
-    </Application.Styles>
 
-    <Application.Resources>
-        <!-- 卡通色彩风格 -->
-        <SolidColorBrush x:Key="AppBg" Color="#FFF7F0FF" />
-        <SolidColorBrush x:Key="SidebarBg" Color="#FF6B8FD9" />
-        <SolidColorBrush x:Key="CardBg" Color="#FFF0E6FF" />
-        <SolidColorBrush x:Key="CardHoverBg" Color="#FFE8D6FF" />
-        <SolidColorBrush x:Key="AccentBlue" Color="#FF7C9AFF" />
-        <SolidColorBrush x:Key="AccentGreen" Color="#FF8EE4AF" />
-        <SolidColorBrush x:Key="AccentPink" Color="#FFDD7598" />
-        <SolidColorBrush x:Key="AccentYellow" Color="#FFFFB563" />
-        <SolidColorBrush x:Key="AccentPurple" Color="#FFB388FF" />
-        <SolidColorBrush x:Key="TextPrimary" Color="#FF5C3D5E" />
-        <SolidColorBrush x:Key="TextSecondary" Color="#FF8E7AA4" />
-        <SolidColorBrush x:Key="TextDim" Color="#FFB3A0C3" />
-        <SolidColorBrush x:Key="BorderSubtle" Color="#FFD8C8E8" />
-        <SolidColorBrush x:Key="InputBg" Color="#FFFAF3FF" />
-        <SolidColorBrush x:Key="BtnPrimaryBg" Color="#FF7C9AFF" />
-        <SolidColorBrush x:Key="BtnPrimaryHover" Color="#FF9CB3FF" />
-        <SolidColorBrush x:Key="BtnSuccessBg" Color="#FF8EE4AF" />
-        <SolidColorBrush x:Key="BtnSuccessHover" Color="#FFA8EBC1" />
-        <SolidColorBrush x:Key="BtnDangerBg" Color="#FFDD7598" />
-        <SolidColorBrush x:Key="Overlay0" Color="#FFB3A0C3" />
-        <SolidColorBrush x:Key="Surface0" Color="#FFE8D6FF" />
-        <SolidColorBrush x:Key="Surface1" Color="#FFFAF3FF" />
-
-        <!-- 基础控件样式 -->
         <Style Selector="Window">
-            <Setter Property="Background" Value="{StaticResource AppBg}" />
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
             <Setter Property="FontSize" Value="14" />
-            <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI, sans-serif" />
         </Style>
-
         <Style Selector="Button">
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -134,7 +103,6 @@
             <Setter Property="Background" Value="{StaticResource CardBg}" />
             <Setter Property="CornerRadius" Value="18" />
             <Setter Property="Padding" Value="20" />
-            <Setter Property="BoxShadow" Value="0 2px 10px 0 rgba(107, 143, 217, 0.15)" />
         </Style>
 
         <Style Selector="TextBlock.h1">
@@ -184,5 +152,30 @@
             <Setter Property="Background" Value="{StaticResource AccentBlue}" />
             <Setter Property="Opacity" Value="0.35" />
         </Style>
+    </Application.Styles>
+
+    <Application.Resources>
+        <SolidColorBrush x:Key="AppBg" Color="#FFF7F0FF" />
+        <SolidColorBrush x:Key="SidebarBg" Color="#FF6B8FD9" />
+        <SolidColorBrush x:Key="CardBg" Color="#FFF0E6FF" />
+        <SolidColorBrush x:Key="CardHoverBg" Color="#FFE8D6FF" />
+        <SolidColorBrush x:Key="AccentBlue" Color="#FF7C9AFF" />
+        <SolidColorBrush x:Key="AccentGreen" Color="#FF8EE4AF" />
+        <SolidColorBrush x:Key="AccentPink" Color="#FFDD7598" />
+        <SolidColorBrush x:Key="AccentYellow" Color="#FFFFB363" />
+        <SolidColorBrush x:Key="AccentPurple" Color="#FFB388FF" />
+        <SolidColorBrush x:Key="TextPrimary" Color="#FF5C3D5E" />
+        <SolidColorBrush x:Key="TextSecondary" Color="#FF8E7AA4" />
+        <SolidColorBrush x:Key="TextDim" Color="#FFB3A0C3" />
+        <SolidColorBrush x:Key="BorderSubtle" Color="#FFD8C8E8" />
+        <SolidColorBrush x:Key="InputBg" Color="#FFFAF3FF" />
+        <SolidColorBrush x:Key="BtnPrimaryBg" Color="#FF7C9AFF" />
+        <SolidColorBrush x:Key="BtnPrimaryHover" Color="#FF9CB3FF" />
+        <SolidColorBrush x:Key="BtnSuccessBg" Color="#FF8EE4AF" />
+        <SolidColorBrush x:Key="BtnSuccessHover" Color="#FFA8EBC1" />
+        <SolidColorBrush x:Key="BtnDangerBg" Color="#FFDD7598" />
+        <SolidColorBrush x:Key="Overlay0" Color="#FFB3A0C3" />
+        <SolidColorBrush x:Key="Surface0" Color="#FFE8D6FF" />
+        <SolidColorBrush x:Key="Surface1" Color="#FFFAF3FF" />
     </Application.Resources>
 </Application>

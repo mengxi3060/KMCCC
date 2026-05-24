@@ -118,18 +118,18 @@
                                     </StackPanel>
                                 </StackPanel>
 
-                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="12" ColumnSpacing="12">
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="游戏版本" Classes="body" VerticalAlignment="Center" />
-                                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="HomeVersionCombo" Classes="input" MinWidth="200" />
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="游戏版本" Classes="body" VerticalAlignment="Center" Margin="0,0,0,12" />
+                                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="HomeVersionCombo" Classes="input" MinWidth="200" Margin="12,0,0,12" />
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="玩家名称" Classes="body" VerticalAlignment="Center" />
-                                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="HomePlayerName" Classes="input" Text="Steve" MinWidth="200" />
+                                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="HomePlayerName" Classes="input" Text="Steve" MinWidth="200" Margin="12,0,0,0" />
                                 </Grid>
 
                                 <Button Classes="success" Click="OnLaunchGame" Content="▶️ 开始游戏" Height="46" FontSize="16" FontWeight="Bold" />
                             </StackPanel>
                         </Border>
 
-                        <WrapPanel Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
                             <Border Classes="card" MinWidth="170">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="已安装版本" Classes="dim" />
@@ -148,7 +148,7 @@
                                     <TextBlock x:Name="StatJava" Text="自动检测中..." FontSize="30" FontWeight="Bold" Foreground="{StaticResource AccentPink}" />
                                 </StackPanel>
                             </Border>
-                        </WrapPanel>
+                        </StackPanel>
                     </StackPanel>
 
                     <!-- 下载页面 -->
