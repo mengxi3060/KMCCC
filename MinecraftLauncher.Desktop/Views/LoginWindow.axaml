@@ -1,0 +1,111 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="MinecraftLauncher.Desktop.Views.LoginWindow"
+        Title="登录 - Minecraft 启动器"
+        Width="420" Height="520"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource AppBg}"
+        CanResize="False"
+        ShowInTaskbar="True">
+
+    <Grid>
+        <!-- 背景装饰 -->
+        <Border Background="{StaticResource SidebarBg}" VerticalAlignment="Top" Height="200" CornerRadius="0,0,40,40">
+            <Grid>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                    <Border Width="80" Height="80" CornerRadius="24" Background="{StaticResource AccentPink}">
+                        <TextBlock Text="✦" FontSize="48" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel HorizontalAlignment="Center" Spacing="4">
+                        <TextBlock Text="MC 启动器" FontSize="24" FontWeight="Bold" Foreground="White" />
+                        <TextBlock Text="欢迎回来！" FontSize="14" Foreground="#FFE0D0FF" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 登录表单 -->
+        <StackPanel x:Name="LoginPanel" VerticalAlignment="Center" Margin="30,0" Spacing="16">
+            <Border Classes="card" Margin="0,60,0,0" Padding="24">
+                <StackPanel Spacing="18">
+                    <TextBlock Text="账号登录" Classes="h2" HorizontalAlignment="Center" />
+
+                    <!-- 邮箱 -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="邮箱" Classes="dim" FontSize="12" />
+                        <TextBox x:Name="EmailInput" Classes="input" Watermark="your@email.com" />
+                    </StackPanel>
+
+                    <!-- 密码 -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="密码" Classes="dim" FontSize="12" />
+                        <TextBox x:Name="PasswordInput" Classes="input" PasswordChar="●" Watermark="••••••••" />
+                    </StackPanel>
+
+                    <!-- 记住我 -->
+                    <CheckBox x:Name="RememberMe" Content="记住登录状态" IsChecked="True" />
+
+                    <!-- 状态提示 -->
+                    <TextBlock x:Name="StatusText" Text="" FontSize="13" Foreground="{StaticResource AccentPink}" TextWrapping="Wrap" HorizontalAlignment="Center" />
+
+                    <!-- 登录按钮 -->
+                    <Button x:Name="LoginBtn" Classes="success" Content="登录" Click="OnLogin" Height="44" FontSize="16" FontWeight="Bold" />
+
+                    <!-- 注册提示 -->
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock Text="还没有账号？" Classes="body" />
+                        <Button x:Name="SwitchToRegister" Classes="ghost" Content="立即注册" Click="OnSwitchToRegister" Padding="0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- 注册表单（初始隐藏） -->
+        <StackPanel x:Name="RegisterPanel" VerticalAlignment="Center" Margin="30,0" Spacing="16" IsVisible="False">
+            <Border Classes="card" Margin="0,60,0,0" Padding="24">
+                <StackPanel Spacing="18">
+                    <TextBlock Text="创建账号" Classes="h2" HorizontalAlignment="Center" />
+
+                    <!-- 用户名 -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="用户名" Classes="dim" FontSize="12" />
+                        <TextBox x:Name="RegUsernameInput" Classes="input" Watermark="你的游戏昵称" />
+                    </StackPanel>
+
+                    <!-- 邮箱 -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="邮箱" Classes="dim" FontSize="12" />
+                        <TextBox x:Name="RegEmailInput" Classes="input" Watermark="your@email.com" />
+                    </StackPanel>
+
+                    <!-- 密码 -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="密码" Classes="dim" FontSize="12" />
+                        <TextBox x:Name="RegPasswordInput" Classes="input" PasswordChar="●" Watermark="••••••••" />
+                    </StackPanel>
+
+                    <!-- 确认密码 -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="确认密码" Classes="dim" FontSize="12" />
+                        <TextBox x:Name="RegConfirmInput" Classes="input" PasswordChar="●" Watermark="••••••••" />
+                    </StackPanel>
+
+                    <!-- 状态提示 -->
+                    <TextBlock x:Name="RegStatusText" Text="" FontSize="13" Foreground="{StaticResource AccentPink}" TextWrapping="Wrap" HorizontalAlignment="Center" />
+
+                    <!-- 注册按钮 -->
+                    <Button x:Name="RegisterBtn" Classes="primary" Content="注册" Click="OnRegister" Height="44" FontSize="16" FontWeight="Bold" />
+
+                    <!-- 登录提示 -->
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock Text="已有账号？" Classes="body" />
+                        <Button x:Name="SwitchToLogin" Classes="ghost" Content="去登录" Click="OnSwitchToLogin" Padding="0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- 底部版权 -->
+        <TextBlock Text="© 2024 Minecraft 启动器" Classes="dim" FontSize="11" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,16" />
+    </Grid>
+</Window>

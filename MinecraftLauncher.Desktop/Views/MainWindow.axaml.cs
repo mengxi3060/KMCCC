@@ -31,6 +31,8 @@ public partial class MainWindow : Window
     private bool _isDownloading;
     private string _gameDir;
     private CancellationTokenSource? _downloadCts;
+    private bool _isLoggedIn = false;
+    private string? _loggedInUsername = null;
 
     public MainWindow()
     {
@@ -661,51 +663,44 @@ public partial class MainWindow : Window
         });
     }
 
-    private async void OnQuickLogin(object? s, RoutedEventArgs e)
+    private async void OnOpenLogin(object? s, RoutedEventArgs e)
     {
-        LoginStatus.Text = "正在登录...";
-        var email = QuickEmail.Text?.Trim();
-        var password = QuickPassword.Text?.Trim();
+        var loginWindow = new LoginWindow();
+        await loginWindow.ShowDialog(this);
 
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password)) { LoginStatus.Text = "⚠ 请输入邮箱和密码"; return; }
-
-        try
+        if (loginWindow.GetLoginResult())
         {
-            using var scope = _serviceProvider.CreateScope();
-            var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-            var result = await authService.Login(new LoginRequest { Email = email, Password = password });
+            _isLoggedIn = true;
+            _loggedInUsername = loginWindow.LoggedInUsername;
+            UpdateLoginUI();
+            AppendConsole("✅ 登录成功！");
+        }
+    }
 
-            if (result.Success && result.User != null)
+    private void OnLogout(object? s, RoutedEventArgs e)
+    {
+        _isLoggedIn = false;
+        _loggedInUsername = null;
+        UpdateLoginUI();
+        AppendConsole("👋 已退出登录");
+    }
+
+    private void UpdateLoginUI()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_isLoggedIn)
             {
-                UserStatus.Text = "已登录";
-                StatusDot.Fill = new SolidColorBrush(Color.Parse("#8EE4AF"));
-                LoginStatus.Text = "✅ 登录成功！";
+                NotLoggedInPanel.IsVisible = false;
+                LoggedInPanel.IsVisible = true;
+                LoggedInUsername.Text = _loggedInUsername ?? "用户";
             }
             else
             {
-                LoginStatus.Text = $"❌ 登录失败: {result.Error}";
+                NotLoggedInPanel.IsVisible = true;
+                LoggedInPanel.IsVisible = false;
             }
-        }
-        catch (Exception ex) { LoginStatus.Text = $"❌ 登录出错: {ex.Message}"; }
-    }
-
-    private async void OnQuickRegister(object? s, RoutedEventArgs e)
-    {
-        LoginStatus.Text = "正在注册...";
-        var email = QuickEmail.Text?.Trim();
-        var password = QuickPassword.Text?.Trim();
-
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password)) { LoginStatus.Text = "⚠ 请输入邮箱和密码"; return; }
-
-        try
-        {
-            using var scope = _serviceProvider.CreateScope();
-            var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-            var username = email.Split('@')[0];
-            var result = await authService.Register(new RegisterRequest { Email = email, Password = password, Username = username });
-            LoginStatus.Text = result.Success ? "✅ 注册成功！请登录" : $"❌ 注册失败: {result.Error}";
-        }
-        catch (Exception ex) { LoginStatus.Text = $"❌ 注册出错: {ex.Message}"; }
+        });
     }
 }
 
