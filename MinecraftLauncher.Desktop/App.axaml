@@ -1,0 +1,75 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MinecraftLauncher.Desktop.App"
+             RequestedThemeVariant="Dark">
+    <Application.Styles>
+        <FluentTheme />
+    </Application.Styles>
+
+    <Application.Resources>
+        <SolidColorBrush x:Key="LauncherBg" Color="#1a1a2e" />
+        <SolidColorBrush x:Key="LauncherCard" Color="#16213e" />
+        <SolidColorBrush x:Key="LauncherAccent" Color="#0f3460" />
+        <SolidColorBrush x:Key="LauncherHighlight" Color="#53d769" />
+        <SolidColorBrush x:Key="LauncherText" Color="#e0e0e0" />
+        <SolidColorBrush x:Key="LauncherDimText" Color="#888888" />
+        <SolidColorBrush x:Key="LauncherBorder" Color="#2a2a4a" />
+        <SolidColorBrush x:Key="LauncherButton" Color="#53d769" />
+        <SolidColorBrush x:Key="LauncherButtonHover" Color="#6be582" />
+        <SolidColorBrush x:Key="LauncherDanger" Color="#e74c3c" />
+    </Application.Resources>
+
+    <Application.Styles>
+        <Style Selector="Window">
+            <Setter Property="Background" Value="{StaticResource LauncherBg}" />
+            <Setter Property="Foreground" Value="{StaticResource LauncherText}" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{StaticResource LauncherCard}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+        <Style Selector="Button.launch">
+            <Setter Property="Background" Value="{StaticResource LauncherButton}" />
+            <Setter Property="Foreground" Value="#1a1a2e" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Height" Value="50" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.launch:pointerover">
+            <Setter Property="Background" Value="{StaticResource LauncherButtonHover}" />
+        </Style>
+        <Style Selector="TextBox.launch-input">
+            <Setter Property="Background" Value="#0d1b2a" />
+            <Setter Property="Foreground" Value="{StaticResource LauncherText}" />
+            <Setter Property="BorderBrush" Value="{StaticResource LauncherBorder}" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Padding" Value="10,0" />
+        </Style>
+        <Style Selector="ComboBox.launch-combo">
+            <Setter Property="Background" Value="#0d1b2a" />
+            <Setter Property="Foreground" Value="{StaticResource LauncherText}" />
+            <Setter Property="BorderBrush" Value="{StaticResource LauncherBorder}" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Height" Value="38" />
+        </Style>
+        <Style Selector="TextBlock.title">
+            <Setter Property="FontSize" Value="28" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource LauncherHighlight}" />
+        </Style>
+        <Style Selector="TextBlock.subtitle">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{StaticResource LauncherDimText}" />
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{StaticResource LauncherDimText}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+    </Application.Styles>
+</Application>
