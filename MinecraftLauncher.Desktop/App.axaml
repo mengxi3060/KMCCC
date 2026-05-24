@@ -47,6 +47,10 @@
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="16" />
         </Style>
+        <Style Selector="Button">
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
         <Style Selector="Button.primary">
             <Setter Property="Background" Value="{StaticResource BtnPrimaryBg}" />
             <Setter Property="Foreground" Value="#1e1e2e" />
@@ -54,6 +58,8 @@
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Height" Value="38" />
             <Setter Property="Padding" Value="20,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.primary:pointerover">
             <Setter Property="Background" Value="{StaticResource BtnPrimaryHover}" />
