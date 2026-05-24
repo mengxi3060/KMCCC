@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { apiClient, GameVersion, JavaInfo, LaunchOptions } from '../services/api'
-import { Play, Gamepad2, Cpu, HardDrive, Server, Monitor } from 'lucide-react'
+import { apiClient, GameVersion } from '../services/api'
+import { Play, Gamepad2, Server, Monitor, Download } from 'lucide-react'
 
 export default function Home() {
   const { user } = useAuth()
   const [versions, setVersions] = useState<GameVersion[]>([])
-  const [javaVersions, setJavaVersions] = useState<JavaInfo[]>([])
   const [selectedVersion, setSelectedVersion] = useState<string>('')
-  const [javaPath, setJavaPath] = useState<string>('')
-  const [maxMemory, setMaxMemory] = useState<number>(2048)
   const [loading, setLoading] = useState(false)
   const [launching, setLaunching] = useState(false)
 
@@ -20,17 +17,10 @@ export default function Home() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [versionsRes, javaRes] = await Promise.all([
-        apiClient.get('/launcher/versions'),
-        apiClient.get('/launcher/java')
-      ])
-      setVersions(versionsRes.data)
-      setJavaVersions(javaRes.data)
-      if (versionsRes.data.length > 0) {
-        setSelectedVersion(versionsRes.data[0].id)
-      }
-      if (javaRes.data.length > 0) {
-        setJavaPath(javaRes.data[0].path)
+      const response = await apiClient.get('/launcher/versions')
+      setVersions(response.data)
+      if (response.data.length > 0) {
+        setSelectedVersion(response.data[0].id)
       }
     } catch (err) {
       console.error('加载数据失败:', err)
@@ -43,12 +33,9 @@ export default function Home() {
     if (!selectedVersion) return
     setLaunching(true)
     try {
-      const options: LaunchOptions = {
-        versionId: selectedVersion,
-        maxMemory,
-        javaPath: javaPath || undefined
-      }
-      await apiClient.post('/launcher/launch', options)
+      await apiClient.post('/launcher/launch', {
+        versionId: selectedVersion
+      })
     } catch (err: any) {
       alert('启动失败: ' + (err.response?.data?.message || err.message))
     } finally {
@@ -93,42 +80,9 @@ export default function Home() {
                       <option key={v.id} value={v.id}>{v.name}</option>
                     ))
                   ) : (
-                    <option>没有找到版本</option>
+                    <option>没有找到已安装的版本</option>
                   )}
                 </select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Cpu className="w-4 h-4 inline mr-2" />
-                    内存分配 (MB)
-                  </label>
-                  <input
-                    type="number"
-                    value={maxMemory}
-                    onChange={(e) => setMaxMemory(Number(e.target.value))}
-                    className="input-field"
-                    min="512"
-                    max="16384"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <HardDrive className="w-4 h-4 inline mr-2" />
-                    Java 路径
-                  </label>
-                  <select
-                    value={javaPath}
-                    onChange={(e) => setJavaPath(e.target.value)}
-                    className="input-field"
-                  >
-                    {javaVersions.map((j) => (
-                      <option key={j.path} value={j.path}>{j.version}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
 
               <button
@@ -148,6 +102,16 @@ export default function Home() {
                   </>
                 )}
               </button>
+
+              {versions.length === 0 && !loading && (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 mb-3">还没有安装任何版本</p>
+                  <a href="/versions" className="btn-primary inline-flex items-center gap-2">
+                    <Download className="w-4 h-4" />
+                    去下载版本
+                  </a>
+                </div>
+              )}
             </div>
           </div>
 

@@ -21,6 +21,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const isElectron = () => {
+  return typeof window !== 'undefined' && (window as any).electronAPI?.isElectron === true
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -31,6 +35,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
       checkAuth()
     } else {
+      const offlinePlayer = localStorage.getItem('offlinePlayer')
+      if (offlinePlayer) {
+        setUser({
+          id: 'offline',
+          username: offlinePlayer,
+          email: 'offline@local',
+          role: 'User'
+        })
+      }
       setIsLoading(false)
     }
   }, [])
@@ -56,7 +69,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const loginMicrosoft = async () => {
-    window.location.href = '/api/auth/microsoft'
+    const microsoftAuthUrl = `${apiClient.defaults.baseURL}/auth/microsoft`
+
+    if (isElectron()) {
+      const electronAPI = (window as any).electronAPI
+      await electronAPI.openExternal(microsoftAuthUrl)
+      try {
+        const response = await apiClient.get('/auth/microsoft/status')
+        if (response.data?.token && response.data?.user) {
+          localStorage.setItem('token', response.data.token)
+          apiClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
+          setUser(response.data.user)
+        }
+      } catch {
+        alert('请在浏览器中完成微软账号登录后，返回启动器刷新页面')
+      }
+    } else {
+      const width = 600
+      const height = 700
+      const left = window.screenX + (window.outerWidth - width) / 2
+      const top = window.screenY + (window.outerHeight - height) / 2
+
+      const authWindow = window.open(
+        microsoftAuthUrl,
+        'Microsoft Login',
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no`
+      )
+
+      if (!authWindow) {
+        window.open(microsoftAuthUrl, '_blank')
+      }
+
+      const checkClosed = setInterval(() => {
+        if (authWindow?.closed) {
+          clearInterval(checkClosed)
+          checkAuth()
+        }
+      }, 500)
+    }
   }
 
   const loginOffline = async (playerName: string) => {
