@@ -22,9 +22,9 @@ public partial class MainWindow : Window
     private readonly IServiceProvider _serviceProvider;
     private readonly IVersionService _versionService;
     private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromMinutes(30) };
-    private readonly ObservableCollection<VersionItem> _installedVersions = new();
-    private readonly ObservableCollection<McVersionItem> _mcVersions = new();
-    private readonly ObservableCollection<ResourceItem> _currentResources = new();
+    private ObservableCollection<VersionItem> _installedVersions = new();
+    private ObservableCollection<McVersionItem> _mcVersions = new();
+    private ObservableCollection<ResourceItem> _currentResources = new();
     private string _versionFilter = "release";
     private string _searchText = "";
     private string _modSearchText = "";
@@ -62,8 +62,6 @@ public partial class MainWindow : Window
 
         _serviceProvider = services.BuildServiceProvider();
         _versionService = _serviceProvider.GetRequiredService<IVersionService>();
-        MemorySlider.ValueChanged += OnMemoryChanged;
-        GameDirInput.Text = _gameDir;
         UpdateNavHighlight("home");
         InitializeDatabase();
     }
@@ -83,17 +81,47 @@ public partial class MainWindow : Window
         }
         await LoadInstalledVersions();
         _ = LoadMcVersionManifest();
+        _ = DetectJavaAutomatically();
     }
 
-    private void OnMemoryChanged(object? s, EventArgs e)
+    private async Task DetectJavaAutomatically()
     {
-        if (s is Slider slider)
+        try
         {
-            var gb = (int)slider.Value;
-            MemoryLabel.Text = $"{gb} GB";
-            StatMemory.Text = $"{gb} GB";
+            var javaPath = FindJava();
+            if (!string.IsNullOrEmpty(javaPath))
+            {
+                JavaPathInput.Text = javaPath;
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    StatJava.Text = "✅ 已找到";
+                    if (StatJava.Parent != null)
+                    {
+                        StatJava.Foreground = new SolidColorBrush(Color.Parse("#8EE4AF"));
+                    }
+                });
+                AppendConsole($"✅ 自动找到 Java: {javaPath}");
+            }
+            else
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    StatJava.Text = "⚠️ 未找到";
+                    if (StatJava.Parent != null)
+                    {
+                        StatJava.Foreground = new SolidColorBrush(Color.Parse("#FFB363"));
+                    }
+                });
+                AppendConsole("⚠️ 未找到 Java，请手动设置");
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendConsole($"Java 检测失败: {ex.Message}");
         }
     }
+
+
 
     private void OnNavHome(object? s, RoutedEventArgs e) => SwitchPage("home");
     private void OnNavDownload(object? s, RoutedEventArgs e) => SwitchPage("download");
@@ -103,9 +131,8 @@ public partial class MainWindow : Window
     private void OnNavShaders(object? s, RoutedEventArgs e) => SwitchPage("shaders");
     private void OnNavTextures(object? s, RoutedEventArgs e) => SwitchPage("textures");
     private void OnNavModpacks(object? s, RoutedEventArgs e) => SwitchPage("modpacks");
-    private void OnNavSettings(object? s, RoutedEventArgs e) => SwitchPage("settings");
 
-    private readonly string[] _pageNames = { "home", "download", "versions", "mods", "resourcepacks", "shaders", "textures", "modpacks", "settings" };
+    private readonly string[] _pageNames = { "home", "download", "versions", "mods", "resourcepacks", "shaders", "textures", "modpacks" };
 
     private void SwitchPage(string page)
     {
@@ -117,7 +144,6 @@ public partial class MainWindow : Window
         ShadersPage.IsVisible = page == "shaders";
         TexturesPage.IsVisible = page == "textures";
         ModpacksPage.IsVisible = page == "modpacks";
-        SettingsPage.IsVisible = page == "settings";
         UpdateNavHighlight(page);
 
         switch (page)
@@ -132,8 +158,8 @@ public partial class MainWindow : Window
 
     private void UpdateNavHighlight(string active)
     {
-        var navButtons = new Button[] { NavHome, NavDownload, NavVersions, NavMods, NavResourcePacks, NavShaders, NavTextures, NavModpacks, NavSettings };
-        for (int i = 0; i < navButtons.Length && i < _pageNames.Length; i++)
+        var navButtons = new Button[] { NavHome, NavDownload, NavVersions, NavMods, NavResourcePacks, NavShaders, NavTextures, NavModpacks };
+        for (int i = 0; i < navButtons.Length && i < _pageNames.Length - 1; i++)
         {
             navButtons[i].Classes.Remove("active");
             if (_pageNames[i] == active) navButtons[i].Classes.Add("active");
@@ -159,14 +185,21 @@ public partial class MainWindow : Window
             VersionList.ItemsSource = _installedVersions;
             var names = _installedVersions.Select(v => v.Name).ToList();
             HomeVersionCombo.ItemsSource = names;
-            LaunchVersionCombo.ItemsSource = names;
-            if (names.Count > 0) { HomeVersionCombo.SelectedIndex = 0; LaunchVersionCombo.SelectedIndex = 0; }
+            if (names.Count > 0)
+            {
+                HomeVersionCombo.SelectedIndex = 0;
+            }
             StatVersions.Text = _installedVersions.Count.ToString();
         }
         catch (Exception ex) { AppendConsole($"加载版本失败: {ex.Message}"); }
     }
 
-    private void OnSearchVersionChanged(object? s, TextChangedEventArgs e) { _searchText = SearchVersionInput?.Text?.Trim() ?? ""; _ = LoadMcVersionManifest(); }
+    private void OnSearchVersionChanged(object? s, TextChangedEventArgs e)
+    {
+        _searchText = SearchVersionInput?.Text?.Trim() ?? "";
+        _ = LoadMcVersionManifest();
+    }
+
     private void OnRefreshVersionList(object? s, RoutedEventArgs e) => _ = LoadMcVersionManifest();
     private void OnFilterRelease(object? s, RoutedEventArgs e) { _versionFilter = "release"; UpdateNavHighlight("download"); _ = LoadMcVersionManifest(); }
     private void OnFilterSnapshot(object? s, RoutedEventArgs e) { _versionFilter = "snapshot"; UpdateNavHighlight("download"); _ = LoadMcVersionManifest(); }
@@ -297,10 +330,11 @@ public partial class MainWindow : Window
             _installedVersions.Add(new VersionItem { Id = versionId, Name = versionId, Type = item.Type, SizeMB = 250, IsValid = true });
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                VersionList.ItemsSource = null; VersionList.ItemsSource = _installedVersions;
+                VersionList.ItemsSource = null;
+                VersionList.ItemsSource = _installedVersions;
                 var names = _installedVersions.Select(v => v.Name).ToList();
-                HomeVersionCombo.ItemsSource = names; LaunchVersionCombo.ItemsSource = names;
-                if (names.Count > 0) { HomeVersionCombo.SelectedIndex = 0; LaunchVersionCombo.SelectedIndex = 0; }
+                HomeVersionCombo.ItemsSource = names;
+                if (names.Count > 0) { HomeVersionCombo.SelectedIndex = 0; }
                 StatVersions.Text = _installedVersions.Count.ToString();
                 GlobalProgressBar.Value = 100;
                 GlobalProgressText.Text = $"✅ {versionId} 下载完成";
@@ -370,7 +404,7 @@ public partial class MainWindow : Window
             MakeMod("thermal", "Thermal Series", "热能科技模组包", "580K", "39K", "1.20.4"),
             MakeMod("waystones", "Waystones", "传送点系统", "620K", "38K", "1.20.4"),
             MakeMod("bop", "Biomes O' Plenty", "80+ 新生物群系", "580K", "42K", "1.20.4"),
-            MakeMod("tconstruct", "Tinkers Construct", "自定义工具与武器", "520K", "51K", "1.20.1"),
+            MakeMod("tconstruct", "Tinkers' Construct", "自定义工具与武器", "520K", "51K", "1.20.1"),
             MakeMod("ars_nouveau", "Ars Nouveau", "魔法模组", "480K", "35K", "1.20.4"),
             MakeMod("vault", "Vault Hunters", "RPG 冒险整合", "620K", "48K", "1.18.2"),
         };
@@ -396,7 +430,7 @@ public partial class MainWindow : Window
             MakeSh("bsl", "BSL Shaders", "温暖柔和的光影效果", "2.8M", "95K", "1.20.4"),
             MakeSh("seus-renewed", "SEUS Renewed", "经典写实光影", "2.1M", "88K", "1.20.4"),
             MakeSh("complementary", "Complementary Shaders", "互补光影，性能与画质兼顾", "1.9M", "76K", "1.20.4"),
-            MakeSh("sildurs", "Sildurs Vibrant", "鲜艳色彩光影", "1.3M", "52K", "1.20.4"),
+            MakeSh("sildurs", "Sildur's Vibrant", "鲜艳色彩光影", "1.3M", "52K", "1.20.4"),
             MakeSh("chocapic", "Chocapic13 Shaders", "轻量高性能光影", "1.1M", "48K", "1.20.4"),
         };
         return r;
@@ -442,7 +476,7 @@ public partial class MainWindow : Window
     private async void OnRefreshVersions(object? s, RoutedEventArgs e)
     {
         AppendConsole("[版本] 正在扫描已安装版本...");
-        var dir = GameDirInput.Text?.Trim() ?? _gameDir;
+        var dir = _gameDir;
         await _versionService.ScanVersions(dir);
         await LoadInstalledVersions();
         AppendConsole($"[版本] 扫描完成，共 {_installedVersions.Count} 个版本");
@@ -454,31 +488,27 @@ public partial class MainWindow : Window
         {
             for (int i = 0; i < _installedVersions.Count; i++)
             {
-                if (_installedVersions[i].Id == versionId) { LaunchVersionCombo.SelectedIndex = i; HomeVersionCombo.SelectedIndex = i; break; }
+                if (_installedVersions[i].Id == versionId) { HomeVersionCombo.SelectedIndex = i; break; }
             }
-            SwitchPage("settings");
+            SwitchPage("home");
         }
     }
 
     private async void OnLaunchGame(object? s, RoutedEventArgs e)
     {
-        var versionName = LaunchVersionCombo.SelectedItem as string ?? HomeVersionCombo.SelectedItem as string;
+        var versionName = HomeVersionCombo.SelectedItem as string;
         if (string.IsNullOrEmpty(versionName)) { AppendConsole("❌ 请先下载并选择一个游戏版本！"); return; }
 
-        var playerName = PlayerNameInput.Text?.Trim();
+        var playerName = HomePlayerName.Text?.Trim();
         if (string.IsNullOrEmpty(playerName)) playerName = "Steve";
-        var memoryMb = (int)MemorySlider.Value * 1024;
-        var gameDir = GameDirInput.Text?.Trim() ?? _gameDir;
-        var javaPath = JavaPathInput.Text?.Trim();
+        var memoryMb = 2048; // 默认 2GB
+        var gameDir = _gameDir;
+        var javaPath = FindJava();
 
         if (string.IsNullOrEmpty(javaPath))
         {
             javaPath = FindJava();
-            if (string.IsNullOrEmpty(javaPath))
-            {
-                AppendConsole("❌ 未找到 Java！请在设置中指定 Java 路径");
-                return;
-            }
+            if (string.IsNullOrEmpty(javaPath)) { AppendConsole("❌ 未找到 Java，请确保系统已安装 Java"); return; }
         }
 
         var versionDir = Path.Combine(gameDir, "versions", versionName);
@@ -515,7 +545,7 @@ public partial class MainWindow : Window
             var cp = string.Join(Path.PathSeparator.ToString(), cpEntries);
             var assetIndex = GetAssetIndex(jsonContent);
 
-            var args = $"-Xmx{memoryMb}m -Xms{(memoryMb / 2)}m -Dminecraft.client.jar=\"{jarPath}\" -Djava.library.path=\"{nativesDir}\" -cp \"{cp}\" net.minecraft.client.main.Main --username \"{playerName}\" --version \"{versionName}\" --gameDir \"{gameDir}\" --assetsDir \"{Path.Combine(gameDir, "assets")}\" --assetIndex {assetIndex} --uuid {Guid.NewGuid():N} --accessToken 0 --userType mojang --versionType release";
+            var args = $"-Xmx{memoryMb}m -Xms{memoryMb / 2}m -Dminecraft.client.jar=\"{jarPath}\" -Djava.library.path=\"{nativesDir}\" -cp \"{cp}\" net.minecraft.client.main.Main --username \"{playerName}\" --version \"{versionName}\" --gameDir \"{gameDir}\" --assetsDir \"{Path.Combine(gameDir, "assets")}\" --assetIndex {assetIndex} --uuid {Guid.NewGuid():N} --accessToken 0 --userType mojang --versionType release";
 
             AppendConsole($"[启动] 正在启动 Java 进程...");
             var psi = new ProcessStartInfo
@@ -529,10 +559,7 @@ public partial class MainWindow : Window
             var process = Process.Start(psi);
             AppendConsole(process != null ? $"[启动] ✅ Minecraft 已启动 (PID: {process.Id})" : "[启动] ❌ 无法启动进程");
         }
-        catch (Exception ex)
-        {
-            AppendConsole($"[启动] ❌ 启动失败: {ex.Message}");
-        }
+        catch (Exception ex) { AppendConsole($"[启动] ❌ 失败: {ex.Message}"); }
     }
 
     private static string GetAssetIndex(string jsonContent)
@@ -556,7 +583,7 @@ public partial class MainWindow : Window
 
     private static string? FindJava()
     {
-        var searchPaths = new[]
+        var searchPaths = new List<string>
         {
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Java"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Java"),
@@ -565,6 +592,29 @@ public partial class MainWindow : Window
             @"C:\Program Files\Java",
             @"C:\Program Files (x86)\Java",
         };
+
+        if (OperatingSystem.IsWindows())
+        {
+            for (int i = 8; i <= 21; i++)
+            {
+                searchPaths.Add($@"C:\Program Files\Java\jdk-{i}");
+                searchPaths.Add($@"C:\Program Files\Java\jdk1.{i}.0");
+                searchPaths.Add($@"C:\Program Files\Eclipse Adoptium\jdk-{i}");
+                searchPaths.Add($@"C:\Program Files\Amazon Corretto\{i}.0.0");
+            }
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            searchPaths.Add("/Library/Java/JavaVirtualMachines");
+            searchPaths.Add("/usr/bin/java");
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            searchPaths.Add("/usr/lib/jvm");
+            searchPaths.Add("/usr/bin/java");
+            searchPaths.Add("/usr/lib/java");
+        }
+
         foreach (var baseDir in searchPaths)
         {
             if (!Directory.Exists(baseDir)) continue;
@@ -572,7 +622,7 @@ public partial class MainWindow : Window
             {
                 foreach (var dir in Directory.GetDirectories(baseDir))
                 {
-                    var javaw = Path.Combine(dir, "bin", "javaw.exe");
+                    var javaw = Path.Combine(dir, "bin", OperatingSystem.IsWindows() ? "javaw.exe" : "java");
                     var java = Path.Combine(dir, "bin", "java.exe");
                     if (File.Exists(javaw)) return javaw;
                     if (File.Exists(java)) return java;
@@ -580,14 +630,26 @@ public partial class MainWindow : Window
             }
             catch { }
         }
+
         try
         {
-            using var proc = Process.Start(new ProcessStartInfo("where", "java") { RedirectStandardOutput = true });
-            proc?.WaitForExit(3000);
-            var path = proc?.StandardOutput.ReadLine()?.Trim();
-            if (!string.IsNullOrEmpty(path) && File.Exists(path)) return path;
+            if (OperatingSystem.IsWindows())
+            {
+                using var proc = Process.Start(new ProcessStartInfo("where", "java") { RedirectStandardOutput = true });
+                proc?.WaitForExit(3000);
+                var path = proc?.StandardOutput.ReadLine()?.Trim();
+                if (!string.IsNullOrEmpty(path) && File.Exists(path)) return path;
+            }
+            else
+            {
+                using var proc = Process.Start(new ProcessStartInfo("which", "java") { RedirectStandardOutput = true });
+                proc?.WaitForExit(3000);
+                var path = proc?.StandardOutput.ReadLine()?.Trim();
+                if (!string.IsNullOrEmpty(path) && File.Exists(path)) return path;
+            }
         }
         catch { }
+
         return null;
     }
 
@@ -599,23 +661,11 @@ public partial class MainWindow : Window
         });
     }
 
-    private async void OnBrowseJava(object? s, RoutedEventArgs e)
-    {
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions { Title = "选择 Java 可执行文件", AllowMultiple = false, FileTypeFilter = new[] { new FilePickerFileType("Java") { Patterns = new[] { "javaw.exe", "java.exe", "java" } } } });
-        if (files.Count > 0) JavaPathInput.Text = files[0].Path.LocalPath;
-    }
-
-    private async void OnBrowseGameDir(object? s, RoutedEventArgs e)
-    {
-        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "选择游戏目录", AllowMultiple = false });
-        if (folders.Count > 0) GameDirInput.Text = folders[0].Path.LocalPath;
-    }
-
-    private async void OnLogin(object? s, RoutedEventArgs e)
+    private async void OnQuickLogin(object? s, RoutedEventArgs e)
     {
         LoginStatus.Text = "正在登录...";
-        var email = SettingsEmail.Text?.Trim();
-        var password = SettingsPassword.Text?.Trim();
+        var email = QuickEmail.Text?.Trim();
+        var password = QuickPassword.Text?.Trim();
 
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password)) { LoginStatus.Text = "⚠ 请输入邮箱和密码"; return; }
 
@@ -627,27 +677,23 @@ public partial class MainWindow : Window
 
             if (result.Success && result.User != null)
             {
-                UserNameText.Text = result.User.Username;
                 UserStatus.Text = "已登录";
+                StatusDot.Fill = new SolidColorBrush(Color.Parse("#8EE4AF"));
                 LoginStatus.Text = "✅ 登录成功！";
-                StatusDot.Fill = new SolidColorBrush(Color.Parse("#a6e3a1"));
             }
             else
             {
                 LoginStatus.Text = $"❌ 登录失败: {result.Error}";
             }
         }
-        catch (Exception ex)
-        {
-            LoginStatus.Text = $"❌ 登录出错: {ex.Message}";
-        }
+        catch (Exception ex) { LoginStatus.Text = $"❌ 登录出错: {ex.Message}"; }
     }
 
-    private async void OnRegister(object? s, RoutedEventArgs e)
+    private async void OnQuickRegister(object? s, RoutedEventArgs e)
     {
         LoginStatus.Text = "正在注册...";
-        var email = SettingsEmail.Text?.Trim();
-        var password = SettingsPassword.Text?.Trim();
+        var email = QuickEmail.Text?.Trim();
+        var password = QuickPassword.Text?.Trim();
 
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password)) { LoginStatus.Text = "⚠ 请输入邮箱和密码"; return; }
 
@@ -659,13 +705,8 @@ public partial class MainWindow : Window
             var result = await authService.Register(new RegisterRequest { Email = email, Password = password, Username = username });
             LoginStatus.Text = result.Success ? "✅ 注册成功！请登录" : $"❌ 注册失败: {result.Error}";
         }
-        catch (Exception ex)
-        {
-            LoginStatus.Text = $"❌ 注册出错: {ex.Message}";
-        }
+        catch (Exception ex) { LoginStatus.Text = $"❌ 注册出错: {ex.Message}"; }
     }
-
-    private void OnSaveSettings(object? s, RoutedEventArgs e) { if (!string.IsNullOrEmpty(GameDirInput.Text)) _gameDir = GameDirInput.Text; LoginStatus.Text = "✅ 设置已保存"; }
 }
 
 public class VersionItem { public string Id { get; set; } = ""; public string Name { get; set; } = ""; public string Type { get; set; } = "Release"; public long SizeMB { get; set; } public bool IsValid { get; set; } }
