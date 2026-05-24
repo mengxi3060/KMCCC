@@ -65,10 +65,10 @@ public partial class MainWindow : Window
         MemorySlider.ValueChanged += OnMemoryChanged;
         GameDirInput.Text = _gameDir;
         UpdateNavHighlight("home");
-        InitDatabase();
+        InitializeDatabase();
     }
 
-    private async void InitDatabase()
+    private async void InitializeDatabase()
     {
         try
         {
@@ -85,11 +85,11 @@ public partial class MainWindow : Window
         _ = LoadMcVersionManifest();
     }
 
-    private void OnMemoryChanged(object? sender, EventArgs e)
+    private void OnMemoryChanged(object? s, EventArgs e)
     {
-        if (sender is Slider s)
+        if (s is Slider slider)
         {
-            var gb = (int)s.Value;
+            var gb = (int)slider.Value;
             MemoryLabel.Text = $"{gb} GB";
             StatMemory.Text = $"{gb} GB";
         }
@@ -272,7 +272,7 @@ public partial class MainWindow : Window
                 {
                     if (!lib.TryGetProperty("downloads", out var dls) || !dls.TryGetProperty("artifact", out var art)) continue;
                     var libUrl = art.GetProperty("url").GetString() ?? "";
-                    var libPath = art.TryGetProperty("path", out var lp) ? lp.GetString() ?? "" : "";
+                    var libPath = art.TryGetProperty("path", out var p) ? p.GetString() ?? "" : "";
                     if (string.IsNullOrEmpty(libUrl) || string.IsNullOrEmpty(libPath)) continue;
                     var fullPath = Path.Combine(libsDir, libPath);
                     if (!File.Exists(fullPath))
@@ -357,63 +357,73 @@ public partial class MainWindow : Window
 
     private static List<ResourceItem> GetAllMods()
     {
-        var r = new List<ResourceItem>();
-        r.Add(MakeMod("optifine", "OptiFine", "高清修复，提升帧率和画质", "2.1M", "89K", "1.20.4"));
-        r.Add(MakeMod("sodium", "Sodium", "渲染优化模组，大幅提升帧率", "1.5M", "95K", "1.20.4"));
-        r.Add(MakeMod("indium", "Indium", "Sodium 渲染优化配件", "1.2M", "42K", "1.20.4"));
-        r.Add(MakeMod("jei", "Just Enough Items", "物品合成表查看", "1.8M", "72K", "1.20.4"));
-        r.Add(MakeMod("emi", "EMI", "新版物品合成表", "650K", "38K", "1.20.4"));
-        r.Add(MakeMod("create", "Create", "机械自动化与动力系统", "980K", "67K", "1.20.1"));
-        r.Add(MakeMod("ae2", "Applied Energistics 2", "数字存储与自动化", "750K", "45K", "1.20.4"));
-        r.Add(MakeMod("mekanism", "Mekanism", "工业科技模组", "620K", "41K", "1.20.4"));
-        r.Add(MakeMod("thermal", "Thermal Series", "热能科技模组包", "580K", "39K", "1.20.4"));
-        r.Add(MakeMod("waystones", "Waystones", "传送点系统", "620K", "38K", "1.20.4"));
-        r.Add(MakeMod("bop", "Biomes O' Plenty", "80+ 新生物群系", "580K", "42K", "1.20.4"));
-        r.Add(MakeMod("tconstruct", "Tinkers' Construct", "自定义工具与武器", "520K", "51K", "1.20.1"));
-        r.Add(MakeMod("ars_nouveau", "Ars Nouveau", "魔法模组", "480K", "35K", "1.20.4"));
-        r.Add(MakeMod("rei", "REI", "物品查看器", "890K", "55K", "1.20.4"));
+        var r = new List<ResourceItem>
+        {
+            MakeMod("optifine", "OptiFine", "高清修复，提升帧率和画质", "2.1M", "89K", "1.20.4"),
+            MakeMod("sodium", "Sodium", "渲染优化模组，大幅提升帧率", "1.5M", "95K", "1.20.4"),
+            MakeMod("indium", "Indium", "Sodium 渲染优化配件", "1.2M", "42K", "1.20.4"),
+            MakeMod("jei", "Just Enough Items", "物品合成表查看", "1.8M", "72K", "1.20.4"),
+            MakeMod("emi", "EMI", "新版物品合成表", "650K", "38K", "1.20.4"),
+            MakeMod("create", "Create", "机械自动化与动力系统", "980K", "67K", "1.20.1"),
+            MakeMod("ae2", "Applied Energistics 2", "数字存储与自动化", "750K", "45K", "1.20.4"),
+            MakeMod("mekanism", "Mekanism", "工业科技模组", "620K", "41K", "1.20.4"),
+            MakeMod("thermal", "Thermal Series", "热能科技模组包", "580K", "39K", "1.20.4"),
+            MakeMod("waystones", "Waystones", "传送点系统", "620K", "38K", "1.20.4"),
+            MakeMod("bop", "Biomes O' Plenty", "80+ 新生物群系", "580K", "42K", "1.20.4"),
+            MakeMod("tconstruct", "Tinkers Construct", "自定义工具与武器", "520K", "51K", "1.20.1"),
+            MakeMod("ars_nouveau", "Ars Nouveau", "魔法模组", "480K", "35K", "1.20.4"),
+            MakeMod("vault", "Vault Hunters", "RPG 冒险整合", "620K", "48K", "1.18.2"),
+        };
         return r;
     }
 
     private static List<ResourceItem> GetSampleResourcePacks()
     {
-        var r = new List<ResourceItem>();
-        r.Add(MakeRp("faithful", "Faithful 32x", "经典高清材质，保持原版风格", "3.2M", "120K", "1.20.4"));
-        r.Add(MakeRp("faithful-64", "Faithful 64x", "64x 高清版", "1.8M", "72K", "1.20.4"));
-        r.Add(MakeRp("vanillatweaks", "Vanilla Tweaks", "原版微调资源包", "1.5M", "65K", "1.20.4"));
-        r.Add(MakeRp("staytrue", "Stay True", "保持原版感觉的优化", "450K", "28K", "1.20.4"));
+        var r = new List<ResourceItem>
+        {
+            MakeRp("faithful", "Faithful 32x", "经典高清材质，保持原版风格", "3.2M", "120K", "1.20.4"),
+            MakeRp("faithful-64", "Faithful 64x", "64x 高清版", "1.8M", "72K", "1.20.4"),
+            MakeRp("vanillatweaks", "Vanilla Tweaks", "原版微调资源包", "1.5M", "65K", "1.20.4"),
+            MakeRp("staytrue", "Stay True", "保持原版感觉的优化", "450K", "28K", "1.20.4"),
+        };
         return r;
     }
 
     private static List<ResourceItem> GetSampleShaders()
     {
-        var r = new List<ResourceItem>();
-        r.Add(MakeSh("bsl", "BSL Shaders", "温暖柔和的光影效果", "2.8M", "95K", "1.20.4"));
-        r.Add(MakeSh("seus-renewed", "SEUS Renewed", "经典写实光影", "2.1M", "88K", "1.20.4"));
-        r.Add(MakeSh("complementary", "Complementary Shaders", "互补光影，性能与画质兼顾", "1.9M", "76K", "1.20.4"));
-        r.Add(MakeSh("sildurs", "Sildur's Vibrant", "鲜艳色彩光影", "1.3M", "52K", "1.20.4"));
-        r.Add(MakeSh("chocapic", "Chocapic13' Shaders", "轻量高性能光影", "1.1M", "48K", "1.20.4"));
+        var r = new List<ResourceItem>
+        {
+            MakeSh("bsl", "BSL Shaders", "温暖柔和的光影效果", "2.8M", "95K", "1.20.4"),
+            MakeSh("seus-renewed", "SEUS Renewed", "经典写实光影", "2.1M", "88K", "1.20.4"),
+            MakeSh("complementary", "Complementary Shaders", "互补光影，性能与画质兼顾", "1.9M", "76K", "1.20.4"),
+            MakeSh("sildurs", "Sildurs Vibrant", "鲜艳色彩光影", "1.3M", "52K", "1.20.4"),
+            MakeSh("chocapic", "Chocapic13 Shaders", "轻量高性能光影", "1.1M", "48K", "1.20.4"),
+        };
         return r;
     }
 
     private static List<ResourceItem> GetSampleTextures()
     {
-        var r = new List<ResourceItem>();
-        r.Add(MakeTx("lbpr", "LB Photo Realism", "超写实 64x 材质", "1.2M", "45K", "1.20.4"));
-        r.Add(MakeTx("soartex", "Soartex Fanver", "平滑风格 64x 材质", "890K", "38K", "1.20.4"));
-        r.Add(MakeTx("rotr", "ROTR", "写实风格材质包", "670K", "29K", "1.20.4"));
+        var r = new List<ResourceItem>
+        {
+            MakeTx("lbpr", "LB Photo Realism", "超写实 64x 材质", "1.2M", "45K", "1.20.4"),
+            MakeTx("soartex", "Soartex Fanver", "平滑风格 64x 材质", "890K", "38K", "1.20.4"),
+            MakeTx("rotr", "ROTR", "写实风格材质包", "670K", "29K", "1.20.4"),
+        };
         return r;
     }
 
     private static List<ResourceItem> GetSampleModpacks()
     {
-        var r = new List<ResourceItem>();
-        r.Add(MakeMp("atm9", "All The Mods 9", "大型科技魔法整合", "1.2M", "52K", "1.20.1"));
-        r.Add(MakeMp("atm10", "All The Mods 10", "ATM 系列最新作", "890K", "41K", "1.20.4"));
-        r.Add(MakeMp("rlcraft", "RLCraft", "硬核生存整合包", "3.5M", "110K", "1.12.2"));
-        r.Add(MakeMp("better-mc", "Better MC (BMC)", "增强原版体验", "980K", "67K", "1.20.4"));
-        r.Add(MakeMp("vault", "Vault Hunters 3", "RPG 冒险整合", "620K", "48K", "1.18.2"));
-        r.Add(MakeMp("enigmatica2", "Enigmatica 2", "经典科技整合", "750K", "41K", "1.12.2"));
+        var r = new List<ResourceItem>
+        {
+            MakeMp("atm9", "All The Mods 9", "大型科技魔法整合", "1.2M", "52K", "1.20.1"),
+            MakeMp("atm10", "All The Mods 10", "ATM 系列最新作", "890K", "41K", "1.20.4"),
+            MakeMp("rlcraft", "RLCraft", "硬核生存整合包", "3.5M", "110K", "1.12.2"),
+            MakeMp("better-mc", "Better MC (BMC)", "增强原版体验", "980K", "67K", "1.20.4"),
+            MakeMp("vault", "Vault Hunters 3", "RPG 冒险整合", "620K", "48K", "1.18.2"),
+            MakeMp("enigmatica2", "Enigmatica 2", "经典科技整合", "750K", "41K", "1.12.2"),
+        };
         return r;
     }
 
@@ -461,7 +471,15 @@ public partial class MainWindow : Window
         var gameDir = GameDirInput.Text?.Trim() ?? _gameDir;
         var javaPath = JavaPathInput.Text?.Trim();
 
-        if (string.IsNullOrEmpty(javaPath)) { javaPath = FindJava(); if (string.IsNullOrEmpty(javaPath)) { AppendConsole("❌ 未找到 Java！请在设置中指定 Java 路径"); return; } }
+        if (string.IsNullOrEmpty(javaPath))
+        {
+            javaPath = FindJava();
+            if (string.IsNullOrEmpty(javaPath))
+            {
+                AppendConsole("❌ 未找到 Java！请在设置中指定 Java 路径");
+                return;
+            }
+        }
 
         var versionDir = Path.Combine(gameDir, "versions", versionName);
         var jarPath = Path.Combine(versionDir, $"{versionName}.jar");
@@ -497,30 +515,40 @@ public partial class MainWindow : Window
             var cp = string.Join(Path.PathSeparator.ToString(), cpEntries);
             var assetIndex = GetAssetIndex(jsonContent);
 
-            var args = $"-XX:+UseG1GC -XX:MaxGCPauseMills=200 -Xmx{memoryMb}m -Xms{memoryMb / 2}m " +
-                       $"-Dminecraft.client.jar=\"{jarPath}\" " +
-                       $"-Djava.library.path=\"{nativesDir}\" " +
-                       $"-cp \"{cp}\" " +
-                       $"net.minecraft.client.main.Main " +
-                       $"--username \"{playerName}\" --version \"{versionName}\" " +
-                       $"--gameDir \"{gameDir}\" --assetsDir \"{Path.Combine(gameDir, "assets")}\" " +
-                       $"--assetIndex {assetIndex} --uuid {Guid.NewGuid():N} " +
-                       $"--accessToken 0 --userType mojang --versionType release";
+            var args = $"-Xmx{memoryMb}m -Xms{(memoryMb / 2)}m -Dminecraft.client.jar=\"{jarPath}\" -Djava.library.path=\"{nativesDir}\" -cp \"{cp}\" net.minecraft.client.main.Main --username \"{playerName}\" --version \"{versionName}\" --gameDir \"{gameDir}\" --assetsDir \"{Path.Combine(gameDir, "assets")}\" --assetIndex {assetIndex} --uuid {Guid.NewGuid():N} --accessToken 0 --userType mojang --versionType release";
 
-            var psi = new ProcessStartInfo { FileName = javaPath, Arguments = args, UseShellExecute = true, CreateNoWindow = false, WorkingDirectory = gameDir };
+            AppendConsole($"[启动] 正在启动 Java 进程...");
+            var psi = new ProcessStartInfo
+            {
+                FileName = javaPath,
+                Arguments = args,
+                UseShellExecute = true,
+                CreateNoWindow = false,
+                WorkingDirectory = gameDir
+            };
             var process = Process.Start(psi);
             AppendConsole(process != null ? $"[启动] ✅ Minecraft 已启动 (PID: {process.Id})" : "[启动] ❌ 无法启动进程");
         }
-        catch (Exception ex) { AppendConsole($"[启动] ❌ 启动失败: {ex.Message}"); }
+        catch (Exception ex)
+        {
+            AppendConsole($"[启动] ❌ 启动失败: {ex.Message}");
+        }
     }
 
-    private static string GetAssetIndex(string json)
+    private static string GetAssetIndex(string jsonContent)
     {
         try
         {
-            using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("assetIndex", out var ai)) return ai.TryGetProperty("id", out var id) ? id.GetString() ?? "1.20" : "1.20";
-            if (doc.RootElement.TryGetProperty("assets", out var assets)) return assets.GetString() ?? "1.20";
+            using var doc = JsonDocument.Parse(jsonContent);
+            if (doc.RootElement.TryGetProperty("assetIndex", out var ai))
+            {
+                if (ai.TryGetProperty("id", out var idStr)) return idStr.GetString() ?? "1.20";
+            }
+            if (doc.RootElement.TryGetProperty("assets", out var assetsStr))
+            {
+                var res = assetsStr.GetString();
+                if (!string.IsNullOrEmpty(res)) return res;
+            }
         }
         catch { }
         return "1.20";
@@ -535,6 +563,7 @@ public partial class MainWindow : Window
             @"C:\Program Files\Eclipse Adoptium",
             @"C:\Program Files\Amazon Corretto",
             @"C:\Program Files\Java",
+            @"C:\Program Files (x86)\Java",
         };
         foreach (var baseDir in searchPaths)
         {
@@ -566,8 +595,7 @@ public partial class MainWindow : Window
     {
         Dispatcher.UIThread.Post(() =>
         {
-            ConsoleOutput.Text += "\n" + text;
-            if (ConsoleOutput.Parent is ScrollViewer sv) sv.ScrollToEnd();
+            ConsoleOutput.Text += "\n[" + DateTime.Now.ToString("HH:mm:ss") + "] " + text;
         });
     }
 
@@ -585,25 +613,44 @@ public partial class MainWindow : Window
 
     private async void OnLogin(object? s, RoutedEventArgs e)
     {
+        LoginStatus.Text = "正在登录...";
         var email = SettingsEmail.Text?.Trim();
         var password = SettingsPassword.Text?.Trim();
+
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password)) { LoginStatus.Text = "⚠ 请输入邮箱和密码"; return; }
+
         try
         {
             using var scope = _serviceProvider.CreateScope();
             var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
             var result = await authService.Login(new LoginRequest { Email = email, Password = password });
-            if (result.Success && result.User != null) { UserNameText.Text = result.User.Username; UserStatus.Text = "已登录"; LoginStatus.Text = "✅ 登录成功！"; }
-            else LoginStatus.Text = $"❌ 登录失败: {result.Error}";
+
+            if (result.Success && result.User != null)
+            {
+                UserNameText.Text = result.User.Username;
+                UserStatus.Text = "已登录";
+                LoginStatus.Text = "✅ 登录成功！";
+                StatusDot.Fill = new SolidColorBrush(Color.Parse("#a6e3a1"));
+            }
+            else
+            {
+                LoginStatus.Text = $"❌ 登录失败: {result.Error}";
+            }
         }
-        catch (Exception ex) { LoginStatus.Text = $"❌ 登录出错: {ex.Message}"; }
+        catch (Exception ex)
+        {
+            LoginStatus.Text = $"❌ 登录出错: {ex.Message}";
+        }
     }
 
     private async void OnRegister(object? s, RoutedEventArgs e)
     {
+        LoginStatus.Text = "正在注册...";
         var email = SettingsEmail.Text?.Trim();
         var password = SettingsPassword.Text?.Trim();
+
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password)) { LoginStatus.Text = "⚠ 请输入邮箱和密码"; return; }
+
         try
         {
             using var scope = _serviceProvider.CreateScope();
@@ -612,7 +659,10 @@ public partial class MainWindow : Window
             var result = await authService.Register(new RegisterRequest { Email = email, Password = password, Username = username });
             LoginStatus.Text = result.Success ? "✅ 注册成功！请登录" : $"❌ 注册失败: {result.Error}";
         }
-        catch (Exception ex) { LoginStatus.Text = $"❌ 注册出错: {ex.Message}"; }
+        catch (Exception ex)
+        {
+            LoginStatus.Text = $"❌ 注册出错: {ex.Message}";
+        }
     }
 
     private void OnSaveSettings(object? s, RoutedEventArgs e) { if (!string.IsNullOrEmpty(GameDirInput.Text)) _gameDir = GameDirInput.Text; LoginStatus.Text = "✅ 设置已保存"; }
