@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Http;
 using System.Text.Json;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -93,14 +97,10 @@ public partial class MainWindow : Window
             var javaPath = FindJava();
             if (!string.IsNullOrEmpty(javaPath))
             {
-                JavaPathInput.Text = javaPath;
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     StatJava.Text = "✅ 已找到";
-                    if (StatJava.Parent != null)
-                    {
-                        StatJava.Foreground = new SolidColorBrush(Color.Parse("#8EE4AF"));
-                    }
+                    StatJava.Foreground = new SolidColorBrush(Color.Parse("#8EE4AF"));
                 });
                 AppendConsole($"✅ 自动找到 Java: {javaPath}");
             }
@@ -109,12 +109,9 @@ public partial class MainWindow : Window
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     StatJava.Text = "⚠️ 未找到";
-                    if (StatJava.Parent != null)
-                    {
-                        StatJava.Foreground = new SolidColorBrush(Color.Parse("#FFB363"));
-                    }
+                    StatJava.Foreground = new SolidColorBrush(Color.Parse("#FFB363"));
                 });
-                AppendConsole("⚠️ 未找到 Java，请手动设置");
+                AppendConsole("⚠️ 未找到 Java，请确保系统已安装 Java");
             }
         }
         catch (Exception ex)
