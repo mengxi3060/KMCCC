@@ -2,257 +2,438 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="MinecraftLauncher.Desktop.Views.MainWindow"
         Title="Minecraft Launcher Community"
-        Width="900" Height="620"
-        MinWidth="800" MinHeight="550"
+        Width="1050" Height="680"
+        MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         CanResize="True"
-        Background="{StaticResource LauncherBg}">
+        Background="{StaticResource AppBg}"
+        ExtendClientAreaToDecorationsHint="True"
+        TransparencyLevelHint="AcrylicBlur">
 
-    <Panel>
-        <Grid RowDefinitions="Auto,*" Margin="0">
+    <Grid ColumnDefinitions="200,*">
 
-            <Border Grid.Row="0" Background="#0d1b2a" Padding="20,12" BorderBrush="#2a2a4a" BorderThickness="0,0,0,1">
-                <Grid ColumnDefinitions="Auto,*,Auto">
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <TextBlock Text="⛏" FontSize="24" VerticalAlignment="Center" />
-                        <TextBlock Text="Minecraft Launcher" FontSize="20" FontWeight="Bold"
-                                   Foreground="{StaticResource LauncherHighlight}" VerticalAlignment="Center" />
-                        <TextBlock Text="Community" FontSize="14" Foreground="{StaticResource LauncherDimText}"
-                                   VerticalAlignment="Center" Margin="0,4,0,0" />
+        <!-- Sidebar -->
+        <Border Grid.Column="0" Background="{StaticResource SidebarBg}" Padding="12,16" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,0,1,0">
+            <StackPanel Spacing="2">
+                <StackPanel Orientation="Horizontal" Spacing="10" Margin="4,0,0,16">
+                    <Border Width="36" Height="36" CornerRadius="8" Background="{StaticResource AccentGreen}">
+                        <TextBlock Text="M" FontSize="20" FontWeight="Bold" Foreground="#1e1e2e" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Minecraft" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" />
+                        <TextBlock Text="Launcher" FontSize="11" Foreground="{StaticResource TextDim}" />
                     </StackPanel>
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Ellipse Width="32" Height="32" Fill="{StaticResource LauncherAccent}" />
-                        <TextBlock x:Name="UserNameText" Text="未登录" FontSize="13"
-                                   Foreground="{StaticResource LauncherDimText}" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Grid>
-            </Border>
+                </StackPanel>
 
-            <Grid Grid.Row="1" ColumnDefinitions="220,*" Margin="0">
+                <TextBlock Text="游戏" Classes="dim" Margin="8,8,0,4" />
+                <Button x:Name="NavHome" Classes="nav" Click="OnNavHome" Content="🏠  首页" />
+                <Button x:Name="NavDownload" Classes="nav" Click="OnNavDownload" Content="📥  下载" />
+                <Button x:Name="NavVersions" Classes="nav" Click="OnNavVersions" Content="📦  版本管理" />
 
-                <Border Grid.Column="0" Background="#0f1a2e" Padding="12" BorderBrush="#2a2a4a" BorderThickness="0,0,1,0">
+                <TextBlock Text="资源" Classes="dim" Margin="8,12,0,4" />
+                <Button x:Name="NavMods" Classes="nav" Click="OnNavMods" Content="🧩  模组" />
+                <Button x:Name="NavResourcePacks" Classes="nav" Click="OnNavResourcePacks" Content="🎨  资源包" />
+                <Button x:Name="NavShaders" Classes="nav" Click="OnNavShaders" Content="✨  光影" />
+                <Button x:Name="NavTextures" Classes="nav" Click="OnNavTextures" Content="🖼  材质包" />
+                <Button x:Name="NavModpacks" Classes="nav" Click="OnNavModpacks" Content="📦  整合包" />
+
+                <TextBlock Text="系统" Classes="dim" Margin="8,12,0,4" />
+                <Button x:Name="NavSettings" Classes="nav" Click="OnNavSettings" Content="⚙  设置" />
+
+                <Border Margin="0,16,0,0" Background="{StaticResource Surface0}" CornerRadius="8" Padding="10">
                     <StackPanel Spacing="4">
-                        <Button x:Name="NavHome" Content="🏠 首页" Click="OnNavHome"
-                                HorizontalAlignment="Stretch" Height="40" />
-                        <Button x:Name="NavLaunch" Content="🚀 启动游戏" Click="OnNavLaunch"
-                                HorizontalAlignment="Stretch" Height="40" />
-                        <Button x:Name="NavVersions" Content="📦 版本管理" Click="OnNavVersions"
-                                HorizontalAlignment="Stretch" Height="40" />
-                        <Button x:Name="NavSettings" Content="⚙ 设置" Click="OnNavSettings"
-                                HorizontalAlignment="Stretch" Height="40" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse Width="8" Height="8" Fill="{StaticResource AccentGreen}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="UserStatus" Text="未登录" Classes="dim" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock x:Name="UserNameText" Text="点击设置登录" Classes="dim" />
                     </StackPanel>
                 </Border>
+            </StackPanel>
+        </Border>
 
-                <Grid Grid.Column="1" x:Name="ContentArea">
+        <!-- Main Content -->
+        <ScrollViewer Grid.Column="1">
+            <Grid x:Name="ContentArea">
 
-                    <!-- Home Page -->
-                    <StackPanel x:Name="HomePage" Margin="24" Spacing="16">
-                        <TextBlock Text="欢迎回来" Classes="title" />
-                        <TextBlock Text="选择一个版本开始你的冒险之旅" Classes="subtitle" />
+                <!-- ===== HOME PAGE ===== -->
+                <StackPanel x:Name="HomePage" Margin="28,24" Spacing="20">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="欢迎回来" Classes="h1" />
+                        <TextBlock Text="选择版本，开始你的冒险" Classes="body" />
+                    </StackPanel>
 
-                        <Border Classes="card" Margin="0,8">
-                            <StackPanel Spacing="8">
-                                <TextBlock Text="快速启动" FontSize="16" FontWeight="SemiBold" />
-                                <Grid ColumnDefinitions="*,Auto" Margin="0,8">
-                                    <StackPanel Grid.Column="0" Spacing="4">
-                                        <TextBlock Classes="label" Text="选择版本" />
-                                        <ComboBox x:Name="HomeVersionCombo" Classes="launch-combo"
-                                                  HorizontalAlignment="Stretch" />
-                                    </StackPanel>
-                                    <Button Grid.Column="1" Content="启动" Classes="launch" Width="120"
-                                            Click="OnLaunchGame" VerticalAlignment="Bottom" Margin="12,0,0,0" />
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border Classes="card" Width="200">
-                                <StackPanel>
-                                    <TextBlock Text="已安装版本" FontSize="12" Foreground="{StaticResource LauncherDimText}" />
-                                    <TextBlock x:Name="StatVersions" Text="0" FontSize="28" FontWeight="Bold"
-                                               Foreground="{StaticResource LauncherHighlight}" />
+                    <Border Classes="card">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="快速启动" Classes="h2" />
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="选择版本" Classes="dim" />
+                                    <ComboBox x:Name="HomeVersionCombo" Classes="input" HorizontalAlignment="Stretch" />
                                 </StackPanel>
-                            </Border>
-                            <Border Classes="card" Width="200">
-                                <StackPanel>
-                                    <TextBlock Text="分配内存" FontSize="12" Foreground="{StaticResource LauncherDimText}" />
-                                    <TextBlock x:Name="StatMemory" Text="2 GB" FontSize="28" FontWeight="Bold"
-                                               Foreground="#4fc3f7" />
-                                </StackPanel>
-                            </Border>
-                            <Border Classes="card" Width="200">
-                                <StackPanel>
-                                    <TextBlock Text="游戏目录" FontSize="12" Foreground="{StaticResource LauncherDimText}" />
-                                    <TextBlock x:Name="StatDirectory" Text=".minecraft" FontSize="28" FontWeight="Bold"
-                                               Foreground="#ffb74d" />
-                                </StackPanel>
-                            </Border>
+                                <Button Grid.Column="1" Classes="success" Click="OnLaunchGame" Content="▶  启动游戏" Margin="16,0,0,0" VerticalAlignment="Bottom" />
+                            </Grid>
                         </StackPanel>
-                    </StackPanel>
+                    </Border>
 
-                    <!-- Launch Page -->
-                    <StackPanel x:Name="LaunchPage" Margin="24" Spacing="16" IsVisible="False">
-                        <TextBlock Text="启动游戏" Classes="title" />
-
-                        <Border Classes="card">
-                            <StackPanel Spacing="16">
-                                <TextBlock Text="游戏设置" FontSize="16" FontWeight="SemiBold" />
-
-                                <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="游戏版本" Classes="label"
-                                               VerticalAlignment="Center" Margin="0,0,0,8" />
-                                    <ComboBox Grid.Row="0" Grid.Column="1" x:Name="LaunchVersionCombo"
-                                              Classes="launch-combo" HorizontalAlignment="Stretch" Margin="0,0,0,8" />
-
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="玩家名称" Classes="label"
-                                               VerticalAlignment="Center" Margin="0,0,0,8" />
-                                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="PlayerNameInput"
-                                             Classes="launch-input" Text="Player" Watermark="输入玩家名称" Margin="0,0,0,8" />
-
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Java 路径" Classes="label"
-                                               VerticalAlignment="Center" Margin="0,0,0,8" />
-                                    <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                                        <TextBox Grid.Column="0" x:Name="JavaPathInput" Classes="launch-input"
-                                                 Watermark="自动检测或手动选择 javaw.exe" />
-                                        <Button Grid.Column="1" Content="浏览" Width="60" Margin="8,0,0,0"
-                                                Click="OnBrowseJava" />
-                                    </Grid>
-
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="游戏目录" Classes="label"
-                                               VerticalAlignment="Center" Margin="0,0,0,8" />
-                                    <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                                        <TextBox Grid.Column="0" x:Name="GameDirInput" Classes="launch-input"
-                                                 Watermark="默认 .minecraft 目录" />
-                                        <Button Grid.Column="1" Content="浏览" Width="60" Margin="8,0,0,0"
-                                                Click="OnBrowseGameDir" />
-                                    </Grid>
-
-                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="分配内存" Classes="label"
-                                               VerticalAlignment="Center" />
-                                    <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4">
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <Slider x:Name="MemorySlider" Minimum="1" Maximum="16"
-                                                    Value="2" TickFrequency="1" IsSnapToTickEnabled="True"
-                                                    HorizontalAlignment="Stretch" />
-                                            <TextBlock x:Name="MemoryLabel" Grid.Column="1" Text="2 GB"
-                                                       Width="60" TextAlignment="Right" FontWeight="Bold"
-                                                       Foreground="#4fc3f7" VerticalAlignment="Center" />
-                                        </Grid>
-                                    </StackPanel>
-                                </Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Border Classes="card" Width="180">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="已安装版本" Classes="dim" />
+                                <TextBlock x:Name="StatVersions" Text="0" FontSize="32" FontWeight="Bold" Foreground="{StaticResource AccentBlue}" />
                             </StackPanel>
                         </Border>
-
-                        <Button Content="🚀 启动 Minecraft" Classes="launch" Click="OnLaunchGame"
-                                HorizontalAlignment="Stretch" />
-
-                        <Border Classes="card" MinHeight="120">
-                            <StackPanel Spacing="4">
-                                <TextBlock Text="控制台输出" FontSize="12" Foreground="{StaticResource LauncherDimText}" />
-                                <ScrollViewer x:Name="ConsoleScroll" MaxHeight="150">
-                                    <TextBlock x:Name="ConsoleOutput" Text="等待启动..."
-                                               FontFamily="Consolas,Courier New,monospace" FontSize="12"
-                                               Foreground="#aaaaaa" TextWrapping="Wrap" />
-                                </ScrollViewer>
+                        <Border Classes="card" Width="180">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="分配内存" Classes="dim" />
+                                <TextBlock x:Name="StatMemory" Text="2 GB" FontSize="32" FontWeight="Bold" Foreground="{StaticResource AccentMauve}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="card" Width="180">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="游戏目录" Classes="dim" />
+                                <TextBlock Text=".minecraft" FontSize="32" FontWeight="Bold" Foreground="{StaticResource AccentPeach}" />
                             </StackPanel>
                         </Border>
                     </StackPanel>
+                </StackPanel>
 
-                    <!-- Versions Page -->
-                    <StackPanel x:Name="VersionsPage" Margin="24" Spacing="16" IsVisible="False">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="版本管理" Classes="title" />
-                            <Button Grid.Column="1" Content="🔄 刷新版本" Click="OnRefreshVersions" />
-                        </Grid>
+                <!-- ===== DOWNLOAD PAGE ===== -->
+                <StackPanel x:Name="DownloadPage" Margin="28,24" Spacing="16" IsVisible="False">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="下载游戏" Classes="h1" />
+                        <TextBlock Text="从 Mojang 官方获取 Minecraft 版本" Classes="body" />
+                    </StackPanel>
 
-                        <Border Classes="card">
-                            <StackPanel Spacing="8">
-                                <TextBlock Text="已安装的版本" FontSize="16" FontWeight="SemiBold" />
-                                <ItemsControl x:Name="VersionList">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Background="#0d1b2a" CornerRadius="6" Padding="12,8"
-                                                    Margin="0,2" BorderBrush="#2a2a4a" BorderThickness="1">
-                                                <Grid ColumnDefinitions="*,Auto,Auto">
-                                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
-                                                        <TextBlock FontSize="11" Foreground="#888888">
-                                                            <TextBlock.Text>
-                                                                <MultiBinding StringFormat="{}{0} · {1} MB">
-                                                                    <Binding Path="Type" />
-                                                                    <Binding Path="SizeMB" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                    </StackPanel>
-                                                    <Border Grid.Column="1" Background="#53d769" CornerRadius="4"
-                                                            Padding="8,2" VerticalAlignment="Center" Margin="0,0,8,0"
-                                                            IsVisible="{Binding IsValid}">
-                                                        <TextBlock Text="有效" FontSize="11" Foreground="#1a1a2e" FontWeight="Bold" />
-                                                    </Border>
-                                                    <Button Grid.Column="2" Content="选择启动" Click="OnSelectVersion"
-                                                            Tag="{Binding Id}" />
-                                                </Grid>
+                    <Border Classes="card">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                <TextBox x:Name="SearchVersionInput" Classes="input" Watermark="🔍 搜索版本号..." />
+                                <Button Grid.Column="1" Classes="primary" Content="🔄 刷新列表" Click="OnRefreshVersionList" Margin="8,0,0,0" />
+                                <Button Grid.Column="2" Classes="success" Content="📥 下载选中" Click="OnDownloadVersion" Margin="8,0,0,0" />
+                            </Grid>
+
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                                <Button x:Name="FilterRelease" Classes="ghost" Content="正式版" Click="OnFilterRelease" />
+                                <Button x:Name="FilterSnapshot" Classes="ghost" Content="快照" Click="OnFilterSnapshot" />
+                                <Button x:Name="FilterAll" Classes="ghost" Content="全部" Click="OnFilterAll" />
+                            </StackPanel>
+
+                            <TextBlock x:Name="VersionListStatus" Text="正在加载版本列表..." Classes="dim" />
+
+                            <ListBox x:Name="DownloadVersionList" Height="320" Background="{StaticResource InputBg}" BorderBrush="{StaticResource BorderSubtle}" CornerRadius="8">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="4,6">
+                                            <Border Width="8" Height="8" CornerRadius="4" Margin="0,0,10,0" VerticalAlignment="Center">
+                                                <Border.Background>
+                                                    <MultiBinding>
+                                                        <Binding Path="Type" />
+                                                    </MultiBinding>
+                                                </Border.Background>
                                             </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </Border>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Id}" FontWeight="SemiBold" FontSize="13" />
+                                                <TextBlock Text="{Binding Type}" Classes="dim" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="{Binding ReleaseDate}" Classes="dim" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="card" IsVisible="False" x:Name="DownloadProgressCard">
+                        <StackPanel Spacing="8">
+                            <TextBlock x:Name="DownloadProgressText" Text="正在下载..." Classes="body" />
+                            <ProgressBar x:Name="DownloadProgressBar" Classes="download" Minimum="0" Maximum="100" Value="0" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ===== VERSIONS PAGE ===== -->
+                <StackPanel x:Name="VersionsPage" Margin="28,24" Spacing="16" IsVisible="False">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="版本管理" Classes="h1" />
+                            <TextBlock Text="管理已安装的游戏版本" Classes="body" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Classes="primary" Content="🔄 刷新" Click="OnRefreshVersions" />
+                    </Grid>
+
+                    <ItemsControl x:Name="VersionList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="card" Margin="0,4">
+                                    <Grid ColumnDefinitions="*,Auto,Auto">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
+                                            <TextBlock Classes="dim">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}{0} · {1} MB">
+                                                        <Binding Path="Type" />
+                                                        <Binding Path="SizeMB" />
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Background="{StaticResource AccentGreen}" CornerRadius="4" Padding="8,2" VerticalAlignment="Center" Margin="0,0,8,0" IsVisible="{Binding IsValid}">
+                                            <TextBlock Text="有效" FontSize="11" Foreground="#1e1e2e" FontWeight="Bold" />
+                                        </Border>
+                                        <Button Grid.Column="2" Classes="primary" Content="选择启动" Click="OnSelectVersion" Tag="{Binding Id}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- ===== MODS PAGE ===== -->
+                <StackPanel x:Name="ModsPage" Margin="28,24" Spacing="16" IsVisible="False">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="模组" Classes="h1" />
+                        <TextBlock Text="浏览和下载 Minecraft 模组" Classes="body" />
                     </StackPanel>
 
-                    <!-- Settings Page -->
-                    <StackPanel x:Name="SettingsPage" Margin="24" Spacing="16" IsVisible="False">
-                        <TextBlock Text="设置" Classes="title" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox x:Name="SearchModsInput" Classes="input" Watermark="🔍 搜索模组..." />
+                        <Button Grid.Column="1" Classes="primary" Content="搜索" Margin="8,0,0,0" Click="OnSearchMods" />
+                    </Grid>
 
-                        <Border Classes="card">
-                            <StackPanel Spacing="16">
-                                <TextBlock Text="账户设置" FontSize="16" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="ghost" Content="热门" Click="OnModCategory" Tag="popular" />
+                        <Button Classes="ghost" Content="最新" Click="OnModCategory" Tag="newest" />
+                        <Button Classes="ghost" Content="冒险" Click="OnModCategory" Tag="adventure" />
+                        <Button Classes="ghost" Content="科技" Click="OnModCategory" Tag="tech" />
+                        <Button Classes="ghost" Content="魔法" Click="OnModCategory" Tag="magic" />
+                        <Button Classes="ghost" Content="装饰" Click="OnModCategory" Tag="decoration" />
+                    </StackPanel>
 
-                                <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto">
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="邮箱" Classes="label"
-                                               VerticalAlignment="Center" Margin="0,0,0,8" />
-                                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="SettingsEmail"
-                                             Classes="launch-input" Watermark="输入邮箱" Margin="0,0,0,8" />
+                    <ItemsControl x:Name="ModList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="card" Margin="0,4">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Border Width="48" Height="48" CornerRadius="8" Background="{StaticResource Surface1}" Margin="0,0,12,0">
+                                            <TextBlock Text="🧩" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
+                                            <TextBlock Text="{Binding Description}" Classes="dim" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+                                                <TextBlock Classes="dim">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding StringFormat="{}⬇ {0}  ❤ {1}  📋 {2}">
+                                                            <Binding Path="Downloads" />
+                                                            <Binding Path="Likes" />
+                                                            <Binding Path="GameVersion" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Classes="primary" Content="下载" Click="OnDownloadResource" Tag="{Binding Id}" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
 
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="密码" Classes="label"
-                                               VerticalAlignment="Center" />
-                                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="SettingsPassword"
-                                             Classes="launch-input" PasswordChar="*" Watermark="输入密码" />
+                <!-- ===== RESOURCE PACKS PAGE ===== -->
+                <StackPanel x:Name="ResourcePacksPage" Margin="28,24" Spacing="16" IsVisible="False">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="资源包" Classes="h1" />
+                        <TextBlock Text="自定义你的游戏音效和语言" Classes="body" />
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Classes="input" Watermark="🔍 搜索资源包..." />
+                        <Button Grid.Column="1" Classes="primary" Content="搜索" Margin="8,0,0,0" />
+                    </Grid>
+                    <ItemsControl x:Name="ResourcePackList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="card" Margin="0,4">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Border Width="48" Height="48" CornerRadius="8" Background="{StaticResource Surface1}" Margin="0,0,12,0">
+                                            <TextBlock Text="🎨" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
+                                            <TextBlock Text="{Binding Description}" Classes="dim" />
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Classes="primary" Content="下载" Click="OnDownloadResource" Tag="{Binding Id}" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- ===== SHADERS PAGE ===== -->
+                <StackPanel x:Name="ShadersPage" Margin="28,24" Spacing="16" IsVisible="False">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="光影" Classes="h1" />
+                        <TextBlock Text="让 Minecraft 拥有逼真的光影效果" Classes="body" />
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Classes="input" Watermark="🔍 搜索光影包..." />
+                        <Button Grid.Column="1" Classes="primary" Content="搜索" Margin="8,0,0,0" />
+                    </Grid>
+                    <ItemsControl x:Name="ShaderList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="card" Margin="0,4">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Border Width="48" Height="48" CornerRadius="8" Background="{StaticResource Surface1}" Margin="0,0,12,0">
+                                            <TextBlock Text="✨" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
+                                            <TextBlock Text="{Binding Description}" Classes="dim" />
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Classes="primary" Content="下载" Click="OnDownloadResource" Tag="{Binding Id}" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- ===== TEXTURES PAGE ===== -->
+                <StackPanel x:Name="TexturesPage" Margin="28,24" Spacing="16" IsVisible="False">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="材质包" Classes="h1" />
+                        <TextBlock Text="改变方块和物品的外观" Classes="body" />
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Classes="input" Watermark="🔍 搜索材质包..." />
+                        <Button Grid.Column="1" Classes="primary" Content="搜索" Margin="8,0,0,0" />
+                    </Grid>
+                    <ItemsControl x:Name="TextureList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="card" Margin="0,4">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Border Width="48" Height="48" CornerRadius="8" Background="{StaticResource Surface1}" Margin="0,0,12,0">
+                                            <TextBlock Text="🖼" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
+                                            <TextBlock Text="{Binding Description}" Classes="dim" />
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Classes="primary" Content="下载" Click="OnDownloadResource" Tag="{Binding Id}" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- ===== MODPACKS PAGE ===== -->
+                <StackPanel x:Name="ModpacksPage" Margin="28,24" Spacing="16" IsVisible="False">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="整合包" Classes="h1" />
+                        <TextBlock Text="一键安装精心搭配的模组合集" Classes="body" />
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Classes="input" Watermark="🔍 搜索整合包..." />
+                        <Button Grid.Column="1" Classes="primary" Content="搜索" Margin="8,0,0,0" />
+                    </Grid>
+                    <ItemsControl x:Name="ModpackList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="card" Margin="0,4">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Border Width="48" Height="48" CornerRadius="8" Background="{StaticResource Surface1}" Margin="0,0,12,0">
+                                            <TextBlock Text="📦" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
+                                            <TextBlock Text="{Binding Description}" Classes="dim" />
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Classes="success" Content="安装" Click="OnDownloadResource" Tag="{Binding Id}" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- ===== SETTINGS PAGE ===== -->
+                <StackPanel x:Name="SettingsPage" Margin="28,24" Spacing="16" IsVisible="False">
+                    <TextBlock Text="设置" Classes="h1" />
+
+                    <Border Classes="card">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="启动设置" Classes="h2" />
+                            <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="游戏版本" Classes="body" VerticalAlignment="Center" Margin="0,0,0,8" />
+                                <ComboBox Grid.Row="0" Grid.Column="1" x:Name="LaunchVersionCombo" Classes="input" HorizontalAlignment="Stretch" Margin="0,0,0,8" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="玩家名称" Classes="body" VerticalAlignment="Center" Margin="0,0,0,8" />
+                                <TextBox Grid.Row="1" Grid.Column="1" x:Name="PlayerNameInput" Classes="input" Text="Player" Watermark="输入玩家名称" Margin="0,0,0,8" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Java 路径" Classes="body" VerticalAlignment="Center" Margin="0,0,0,8" />
+                                <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                                    <TextBox Grid.Column="0" x:Name="JavaPathInput" Classes="input" Watermark="自动检测" />
+                                    <Button Grid.Column="1" Classes="ghost" Content="浏览" Click="OnBrowseJava" Margin="8,0,0,0" />
                                 </Grid>
 
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button Content="登录" Classes="launch" Width="100" Click="OnLogin" />
-                                    <Button Content="注册" Width="100" Click="OnRegister" />
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="分配内存" Classes="body" VerticalAlignment="Center" />
+                                <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <Slider x:Name="MemorySlider" Minimum="1" Maximum="16" Value="2" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                        <TextBlock x:Name="MemoryLabel" Grid.Column="1" Text="2 GB" Width="50" TextAlignment="Right" FontWeight="Bold" Foreground="{StaticResource AccentMauve}" VerticalAlignment="Center" />
+                                    </Grid>
                                 </StackPanel>
+                            </Grid>
 
-                                <TextBlock x:Name="LoginStatus" Text="" FontSize="12" Foreground="#ffb74d" />
+                            <Button Classes="success" Click="OnLaunchGame" Content="▶  启动 Minecraft" HorizontalAlignment="Stretch" Height="44" FontSize="16" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="card">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="账户" Classes="h2" />
+                            <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="邮箱" Classes="body" VerticalAlignment="Center" Margin="0,0,0,8" />
+                                <TextBox Grid.Row="0" Grid.Column="1" x:Name="SettingsEmail" Classes="input" Watermark="输入邮箱" Margin="0,0,0,8" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="密码" Classes="body" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="1" Grid.Column="1" x:Name="SettingsPassword" Classes="input" PasswordChar="*" Watermark="输入密码" />
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Classes="primary" Content="登录" Click="OnLogin" />
+                                <Button Classes="ghost" Content="注册" Click="OnRegister" />
                             </StackPanel>
-                        </Border>
+                            <TextBlock x:Name="LoginStatus" Text="" Classes="dim" />
+                        </StackPanel>
+                    </Border>
 
-                        <Border Classes="card">
-                            <StackPanel Spacing="12">
-                                <TextBlock Text="启动器设置" FontSize="16" FontWeight="SemiBold" />
+                    <Border Classes="card">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="游戏目录" Classes="h2" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBox x:Name="GameDirInput" Classes="input" Watermark="默认 .minecraft 目录" />
+                                <Button Grid.Column="1" Classes="ghost" Content="浏览" Click="OnBrowseGameDir" Margin="8,0,0,0" />
+                            </Grid>
+                            <Button Classes="ghost" Content="保存设置" Click="OnSaveSettings" HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </Border>
 
-                                <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto">
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Java 路径" Classes="label"
-                                               VerticalAlignment="Center" Margin="0,0,0,8" />
-                                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="SettingsJavaPath"
-                                             Classes="launch-input" Watermark="留空则自动检测" Margin="0,0,0,8" />
+                    <Border Classes="card" MinHeight="100">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="控制台" Classes="dim" />
+                            <ScrollViewer x:Name="ConsoleScroll" MaxHeight="120">
+                                <TextBlock x:Name="ConsoleOutput" Text="等待启动..." FontFamily="Cascadia Code,Consolas,monospace" FontSize="12" Foreground="{StaticResource TextDim}" TextWrapping="Wrap" />
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
 
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="游戏目录" Classes="label"
-                                               VerticalAlignment="Center" />
-                                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="SettingsGameDir"
-                                             Classes="launch-input" Watermark="默认 .minecraft 目录" />
-                                </Grid>
-
-                                <Button Content="保存设置" Click="OnSaveSettings" Width="120" HorizontalAlignment="Left" />
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                </Grid>
             </Grid>
-        </Grid>
-    </Panel>
+        </ScrollViewer>
+    </Grid>
 </Window>

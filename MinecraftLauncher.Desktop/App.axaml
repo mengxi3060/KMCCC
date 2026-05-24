@@ -7,69 +7,138 @@
     </Application.Styles>
 
     <Application.Resources>
-        <SolidColorBrush x:Key="LauncherBg" Color="#1a1a2e" />
-        <SolidColorBrush x:Key="LauncherCard" Color="#16213e" />
-        <SolidColorBrush x:Key="LauncherAccent" Color="#0f3460" />
-        <SolidColorBrush x:Key="LauncherHighlight" Color="#53d769" />
-        <SolidColorBrush x:Key="LauncherText" Color="#e0e0e0" />
-        <SolidColorBrush x:Key="LauncherDimText" Color="#888888" />
-        <SolidColorBrush x:Key="LauncherBorder" Color="#2a2a4a" />
-        <SolidColorBrush x:Key="LauncherButton" Color="#53d769" />
-        <SolidColorBrush x:Key="LauncherButtonHover" Color="#6be582" />
-        <SolidColorBrush x:Key="LauncherDanger" Color="#e74c3c" />
+        <SolidColorBrush x:Key="AppBg" Color="#1e1e2e" />
+        <SolidColorBrush x:Key="SidebarBg" Color="#181825" />
+        <SolidColorBrush x:Key="CardBg" Color="#262637" />
+        <SolidColorBrush x:Key="CardHoverBg" Color="#2e2e42" />
+        <SolidColorBrush x:Key="AccentBlue" Color="#89b4fa" />
+        <SolidColorBrush x:Key="AccentGreen" Color="#a6e3a1" />
+        <SolidColorBrush x:Key="AccentRed" Color="#f38ba8" />
+        <SolidColorBrush x:Key="AccentYellow" Color="#f9e2af" />
+        <SolidColorBrush x:Key="AccentMauve" Color="#cba6f7" />
+        <SolidColorBrush x:Key="AccentPeach" Color="#fab387" />
+        <SolidColorBrush x:Key="AccentTeal" Color="#94e2d5" />
+        <SolidColorBrush x:Key="AccentPink" Color="#f5c2e7" />
+        <SolidColorBrush x:Key="TextPrimary" Color="#cdd6f4" />
+        <SolidColorBrush x:Key="TextSecondary" Color="#a6adc8" />
+        <SolidColorBrush x:Key="TextDim" Color="#6c7086" />
+        <SolidColorBrush x:Key="BorderSubtle" Color="#313244" />
+        <SolidColorBrush x:Key="InputBg" Color="#1e1e2e" />
+        <SolidColorBrush x:Key="BtnPrimaryBg" Color="#89b4fa" />
+        <SolidColorBrush x:Key="BtnPrimaryHover" Color="#b4d0fb" />
+        <SolidColorBrush x:Key="BtnSuccessBg" Color="#a6e3a1" />
+        <SolidColorBrush x:Key="BtnSuccessHover" Color="#c0edbc" />
+        <SolidColorBrush x:Key="BtnDangerBg" Color="#f38ba8" />
+        <SolidColorBrush x:Key="Overlay0" Color="#6c7086" />
+        <SolidColorBrush x:Key="Surface0" Color="#313244" />
+        <SolidColorBrush x:Key="Surface1" Color="#45475a" />
+        <SolidColorBrush x:Key="Surface2" Color="#585b70" />
     </Application.Resources>
 
     <Application.Styles>
         <Style Selector="Window">
-            <Setter Property="Background" Value="{StaticResource LauncherBg}" />
-            <Setter Property="Foreground" Value="{StaticResource LauncherText}" />
+            <Setter Property="Background" Value="{StaticResource AppBg}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
             <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontFamily" Value="Segoe UI, Noto Sans CJK SC, sans-serif" />
         </Style>
         <Style Selector="Border.card">
-            <Setter Property="Background" Value="{StaticResource LauncherCard}" />
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{StaticResource CardBg}" />
+            <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="16" />
         </Style>
-        <Style Selector="Button.launch">
-            <Setter Property="Background" Value="{StaticResource LauncherButton}" />
-            <Setter Property="Foreground" Value="#1a1a2e" />
-            <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="FontSize" Value="18" />
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="{StaticResource BtnPrimaryBg}" />
+            <Setter Property="Foreground" Value="#1e1e2e" />
+            <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Height" Value="50" />
-            <Setter Property="HorizontalContentAlignment" Value="Center" />
-        </Style>
-        <Style Selector="Button.launch:pointerover">
-            <Setter Property="Background" Value="{StaticResource LauncherButtonHover}" />
-        </Style>
-        <Style Selector="TextBox.launch-input">
-            <Setter Property="Background" Value="#0d1b2a" />
-            <Setter Property="Foreground" Value="{StaticResource LauncherText}" />
-            <Setter Property="BorderBrush" Value="{StaticResource LauncherBorder}" />
-            <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Height" Value="38" />
-            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="Padding" Value="20,0" />
         </Style>
-        <Style Selector="ComboBox.launch-combo">
-            <Setter Property="Background" Value="#0d1b2a" />
-            <Setter Property="Foreground" Value="{StaticResource LauncherText}" />
-            <Setter Property="BorderBrush" Value="{StaticResource LauncherBorder}" />
-            <Setter Property="CornerRadius" Value="6" />
+        <Style Selector="Button.primary:pointerover">
+            <Setter Property="Background" Value="{StaticResource BtnPrimaryHover}" />
+        </Style>
+        <Style Selector="Button.success">
+            <Setter Property="Background" Value="{StaticResource BtnSuccessBg}" />
+            <Setter Property="Foreground" Value="#1e1e2e" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Height" Value="38" />
+            <Setter Property="Padding" Value="20,0" />
         </Style>
-        <Style Selector="TextBlock.title">
-            <Setter Property="FontSize" Value="28" />
-            <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Foreground" Value="{StaticResource LauncherHighlight}" />
+        <Style Selector="Button.success:pointerover">
+            <Setter Property="Background" Value="{StaticResource BtnSuccessHover}" />
         </Style>
-        <Style Selector="TextBlock.subtitle">
+        <Style Selector="Button.ghost">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="16,0" />
+        </Style>
+        <Style Selector="Button.ghost:pointerover">
+            <Setter Property="Background" Value="{StaticResource Surface0}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        </Style>
+        <Style Selector="Button.nav">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="14,0" />
             <Setter Property="FontSize" Value="14" />
-            <Setter Property="Foreground" Value="{StaticResource LauncherDimText}" />
         </Style>
-        <Style Selector="TextBlock.label">
+        <Style Selector="Button.nav:pointerover">
+            <Setter Property="Background" Value="{StaticResource Surface0}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        </Style>
+        <Style Selector="Button.nav.active">
+            <Setter Property="Background" Value="{StaticResource Surface0}" />
+            <Setter Property="Foreground" Value="{StaticResource AccentBlue}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBox.input">
+            <Setter Property="Background" Value="{StaticResource InputBg}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSubtle}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="12,0" />
             <Setter Property="FontSize" Value="13" />
-            <Setter Property="Foreground" Value="{StaticResource LauncherDimText}" />
-            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style Selector="ComboBox.input">
+            <Setter Property="Background" Value="{StaticResource InputBg}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSubtle}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="TextBlock.h1">
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        </Style>
+        <Style Selector="TextBlock.h2">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        </Style>
+        <Style Selector="TextBlock.body">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+        </Style>
+        <Style Selector="TextBlock.dim">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource TextDim}" />
+        </Style>
+        <Style Selector="ProgressBar.download">
+            <Setter Property="Height" Value="4" />
+            <Setter Property="Foreground" Value="{StaticResource AccentBlue}" />
+            <Setter Property="Background" Value="{StaticResource Surface0}" />
+            <Setter Property="CornerRadius" Value="2" />
         </Style>
     </Application.Styles>
 </Application>
