@@ -40,13 +40,9 @@
             <Setter Property="Background" Value="{StaticResource AppBg}" />
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
             <Setter Property="FontSize" Value="14" />
-            <Setter Property="FontFamily" Value="Segoe UI, Noto Sans CJK SC, sans-serif" />
+            <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei UI, sans-serif" />
         </Style>
-        <Style Selector="Border.card">
-            <Setter Property="Background" Value="{StaticResource CardBg}" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="Padding" Value="16" />
-        </Style>
+
         <Style Selector="Button">
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -56,8 +52,8 @@
             <Setter Property="Foreground" Value="#1e1e2e" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Height" Value="38" />
-            <Setter Property="Padding" Value="20,0" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="16,0" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
         </Style>
@@ -69,8 +65,10 @@
             <Setter Property="Foreground" Value="#1e1e2e" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Height" Value="38" />
-            <Setter Property="Padding" Value="20,0" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.success:pointerover">
             <Setter Property="Background" Value="{StaticResource BtnSuccessHover}" />
@@ -79,8 +77,10 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
             <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Height" Value="36" />
-            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="14,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.ghost:pointerover">
             <Setter Property="Background" Value="{StaticResource Surface0}" />
@@ -90,11 +90,12 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource TextDim}" />
             <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Height" Value="40" />
+            <Setter Property="Height" Value="38" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Left" />
             <Setter Property="Padding" Value="14,0" />
-            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.nav:pointerover">
             <Setter Property="Background" Value="{StaticResource Surface0}" />
@@ -105,6 +106,7 @@
             <Setter Property="Foreground" Value="{StaticResource AccentBlue}" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
+
         <Style Selector="TextBox.input">
             <Setter Property="Background" Value="{StaticResource InputBg}" />
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
@@ -113,7 +115,15 @@
             <Setter Property="Height" Value="36" />
             <Setter Property="Padding" Value="12,0" />
             <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
+        <Style Selector="TextBox.input:focus">
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBlue}" />
+        </Style>
+        <Style Selector="TextBox.input:pointerover">
+            <Setter Property="BorderBrush" Value="{StaticResource TextDim}" />
+        </Style>
+
         <Style Selector="ComboBox.input">
             <Setter Property="Background" Value="{StaticResource InputBg}" />
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
@@ -121,14 +131,22 @@
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Height" Value="36" />
             <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
+
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{StaticResource CardBg}" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+
         <Style Selector="TextBlock.h1">
             <Setter Property="FontSize" Value="24" />
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
         </Style>
         <Style Selector="TextBlock.h2">
-            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontSize" Value="16" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
         </Style>
@@ -140,11 +158,34 @@
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Foreground" Value="{StaticResource TextDim}" />
         </Style>
+
         <Style Selector="ProgressBar.download">
             <Setter Property="Height" Value="4" />
             <Setter Property="Foreground" Value="{StaticResource AccentBlue}" />
             <Setter Property="Background" Value="{StaticResource Surface0}" />
             <Setter Property="CornerRadius" Value="2" />
+        </Style>
+
+        <Style Selector="ListBox">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="ListBoxItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Margin" Value="2" />
+        </Style>
+        <Style Selector="ListBoxItem:pointerover">
+            <Setter Property="Background" Value="{StaticResource Surface0}" />
+        </Style>
+        <Style Selector="ListBoxItem:selected">
+            <Setter Property="Background" Value="{StaticResource AccentBlue}" />
+            <Setter Property="Opacity" Value="0.2" />
+        </Style>
+        <Style Selector="ListBoxItem:selected:pointerover">
+            <Setter Property="Background" Value="{StaticResource AccentBlue}" />
+            <Setter Property="Opacity" Value="0.3" />
         </Style>
     </Application.Styles>
 </Application>

@@ -5,7 +5,6 @@ using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -22,28 +21,31 @@ public partial class MainWindow : Window
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IVersionService _versionService;
-    private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromMinutes(10) };
-    private ObservableCollection<VersionItem> _installedVersions = new();
-    private ObservableCollection<McVersionItem> _mcVersions = new();
-    private ObservableCollection<ResourceItem> _currentResources = new();
+    private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromMinutes(30) };
+    private readonly ObservableCollection<VersionItem> _installedVersions = new();
+    private readonly ObservableCollection<McVersionItem> _mcVersions = new();
+    private readonly ObservableCollection<ResourceItem> _currentResources = new();
     private string _versionFilter = "release";
+    private string _searchText = "";
+    private string _modSearchText = "";
     private bool _isDownloading;
-    private string _gameDir = "";
+    private string _gameDir;
+    private CancellationTokenSource? _downloadCts;
 
     public MainWindow()
     {
         InitializeComponent();
 
-        var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MinecraftLauncher", "launcher.db");
-        Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
         _gameDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft");
         Directory.CreateDirectory(_gameDir);
 
+        var dbDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MinecraftLauncher");
+        Directory.CreateDirectory(dbDir);
+        var dbPath = Path.Combine(dbDir, "launcher.db");
+
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite($"Data Source={dbPath}"));
-
+        services.AddDbContext<AppDbContext>(opt => opt.UseSqlite($"Data Source={dbPath}"));
         services.AddScoped<IVersionService, VersionService>();
         services.AddScoped<ILaunchService, LaunchService>();
         services.AddScoped<IJavaService, JavaService>();
@@ -56,19 +58,13 @@ public partial class MainWindow : Window
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<INotificationService, NotificationService>();
-        services.AddScoped<IAuthService>(provider =>
-        {
-            var context = provider.GetRequiredService<AppDbContext>();
-            return new AuthService(context, "MinecraftLauncherDesktopSecretKey2024!", "MinecraftLauncher");
-        });
+        services.AddScoped<IAuthService>(sp => new AuthService(sp.GetRequiredService<AppDbContext>(), "MinecraftLauncherDesktopSecretKey2024!", "MinecraftLauncher"));
 
         _serviceProvider = services.BuildServiceProvider();
         _versionService = _serviceProvider.GetRequiredService<IVersionService>();
-
         MemorySlider.ValueChanged += OnMemoryChanged;
         GameDirInput.Text = _gameDir;
         UpdateNavHighlight("home");
-
         InitDatabase();
     }
 
@@ -77,38 +73,37 @@ public partial class MainWindow : Window
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            await context.Database.EnsureCreatedAsync();
+            var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await ctx.Database.EnsureCreatedAsync();
             await DatabaseInitializer.SeedDataAsync(scope.ServiceProvider);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"数据库初始化失败: {ex.Message}");
+            AppendConsole($"数据库初始化失败: {ex.Message}");
         }
-
         await LoadInstalledVersions();
         _ = LoadMcVersionManifest();
     }
 
     private void OnMemoryChanged(object? sender, EventArgs e)
     {
-        if (sender is Slider slider)
+        if (sender is Slider s)
         {
-            var gb = (int)slider.Value;
+            var gb = (int)s.Value;
             MemoryLabel.Text = $"{gb} GB";
             StatMemory.Text = $"{gb} GB";
         }
     }
 
-    private void OnNavHome(object? sender, RoutedEventArgs e) => SwitchPage("home");
-    private void OnNavDownload(object? sender, RoutedEventArgs e) => SwitchPage("download");
-    private void OnNavVersions(object? sender, RoutedEventArgs e) => SwitchPage("versions");
-    private void OnNavMods(object? sender, RoutedEventArgs e) => SwitchPage("mods");
-    private void OnNavResourcePacks(object? sender, RoutedEventArgs e) => SwitchPage("resourcepacks");
-    private void OnNavShaders(object? sender, RoutedEventArgs e) => SwitchPage("shaders");
-    private void OnNavTextures(object? sender, RoutedEventArgs e) => SwitchPage("textures");
-    private void OnNavModpacks(object? sender, RoutedEventArgs e) => SwitchPage("modpacks");
-    private void OnNavSettings(object? sender, RoutedEventArgs e) => SwitchPage("settings");
+    private void OnNavHome(object? s, RoutedEventArgs e) => SwitchPage("home");
+    private void OnNavDownload(object? s, RoutedEventArgs e) => SwitchPage("download");
+    private void OnNavVersions(object? s, RoutedEventArgs e) => SwitchPage("versions");
+    private void OnNavMods(object? s, RoutedEventArgs e) => SwitchPage("mods");
+    private void OnNavResourcePacks(object? s, RoutedEventArgs e) => SwitchPage("resourcepacks");
+    private void OnNavShaders(object? s, RoutedEventArgs e) => SwitchPage("shaders");
+    private void OnNavTextures(object? s, RoutedEventArgs e) => SwitchPage("textures");
+    private void OnNavModpacks(object? s, RoutedEventArgs e) => SwitchPage("modpacks");
+    private void OnNavSettings(object? s, RoutedEventArgs e) => SwitchPage("settings");
 
     private readonly string[] _pageNames = { "home", "download", "versions", "mods", "resourcepacks", "shaders", "textures", "modpacks", "settings" };
 
@@ -125,11 +120,14 @@ public partial class MainWindow : Window
         SettingsPage.IsVisible = page == "settings";
         UpdateNavHighlight(page);
 
-        if (page == "mods") LoadResources("mod", ModList);
-        else if (page == "resourcepacks") LoadResources("resourcepack", ResourcePackList);
-        else if (page == "shaders") LoadResources("shader", ShaderList);
-        else if (page == "textures") LoadResources("texture", TextureList);
-        else if (page == "modpacks") LoadResources("modpack", ModpackList);
+        switch (page)
+        {
+            case "mods": LoadResources("mod"); break;
+            case "resourcepacks": LoadResources("resourcepack"); break;
+            case "shaders": LoadResources("shader"); break;
+            case "textures": LoadResources("texture"); break;
+            case "modpacks": LoadResources("modpack"); break;
+        }
     }
 
     private void UpdateNavHighlight(string active)
@@ -138,9 +136,14 @@ public partial class MainWindow : Window
         for (int i = 0; i < navButtons.Length && i < _pageNames.Length; i++)
         {
             navButtons[i].Classes.Remove("active");
-            if (_pageNames[i] == active)
-                navButtons[i].Classes.Add("active");
+            if (_pageNames[i] == active) navButtons[i].Classes.Add("active");
         }
+        FilterRelease.Classes.Clear();
+        FilterRelease.Classes.Add(_versionFilter == "release" ? "primary" : "ghost");
+        FilterSnapshot.Classes.Clear();
+        FilterSnapshot.Classes.Add(_versionFilter == "snapshot" ? "primary" : "ghost");
+        FilterAll.Classes.Clear();
+        FilterAll.Classes.Add(_versionFilter == "all" ? "primary" : "ghost");
     }
 
     private async Task LoadInstalledVersions()
@@ -151,273 +154,174 @@ public partial class MainWindow : Window
             _installedVersions.Clear();
             foreach (var v in versions)
             {
-                _installedVersions.Add(new VersionItem
-                {
-                    Id = v.Id,
-                    Name = v.Name,
-                    Type = "Release",
-                    SizeMB = v.Size / 1_000_000,
-                    IsValid = v.IsValid
-                });
+                _installedVersions.Add(new VersionItem { Id = v.Id, Name = v.Name, Type = "Release", SizeMB = v.Size / 1_000_000, IsValid = v.IsValid });
             }
-
             VersionList.ItemsSource = _installedVersions;
             var names = _installedVersions.Select(v => v.Name).ToList();
             HomeVersionCombo.ItemsSource = names;
             LaunchVersionCombo.ItemsSource = names;
-            if (names.Count > 0)
-            {
-                HomeVersionCombo.SelectedIndex = 0;
-                LaunchVersionCombo.SelectedIndex = 0;
-            }
+            if (names.Count > 0) { HomeVersionCombo.SelectedIndex = 0; LaunchVersionCombo.SelectedIndex = 0; }
             StatVersions.Text = _installedVersions.Count.ToString();
         }
-        catch (Exception ex)
-        {
-            AppendConsole($"加载版本失败: {ex.Message}");
-        }
+        catch (Exception ex) { AppendConsole($"加载版本失败: {ex.Message}"); }
     }
+
+    private void OnSearchVersionChanged(object? s, TextChangedEventArgs e) { _searchText = SearchVersionInput?.Text?.Trim() ?? ""; _ = LoadMcVersionManifest(); }
+    private void OnRefreshVersionList(object? s, RoutedEventArgs e) => _ = LoadMcVersionManifest();
+    private void OnFilterRelease(object? s, RoutedEventArgs e) { _versionFilter = "release"; UpdateNavHighlight("download"); _ = LoadMcVersionManifest(); }
+    private void OnFilterSnapshot(object? s, RoutedEventArgs e) { _versionFilter = "snapshot"; UpdateNavHighlight("download"); _ = LoadMcVersionManifest(); }
+    private void OnFilterAll(object? s, RoutedEventArgs e) { _versionFilter = "all"; UpdateNavHighlight("download"); _ = LoadMcVersionManifest(); }
 
     private async Task LoadMcVersionManifest()
     {
         try
         {
-            await Dispatcher.UIThread.InvokeAsync(() =>
-                VersionListStatus.Text = "正在从 Mojang 获取版本列表...");
-
+            await Dispatcher.UIThread.InvokeAsync(() => VersionListStatus.Text = "正在获取版本列表...");
             var json = await _httpClient.GetStringAsync("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json");
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             var latestRelease = root.GetProperty("latest").GetProperty("release").GetString() ?? "";
             var versionsArr = root.GetProperty("versions");
-
             var filtered = new List<McVersionItem>();
             foreach (var v in versionsArr.EnumerateArray())
             {
                 var id = v.GetProperty("id").GetString() ?? "";
                 var type = v.GetProperty("type").GetString() ?? "";
                 var releaseTime = v.GetProperty("releaseTime").GetDateTime();
-
                 if (_versionFilter == "release" && type != "release") continue;
                 if (_versionFilter == "snapshot" && type != "snapshot") continue;
-
-                var searchText = await Dispatcher.UIThread.InvokeAsync(() => SearchVersionInput?.Text?.Trim().ToLower() ?? "");
-                if (!string.IsNullOrEmpty(searchText) && !id.ToLower().Contains(searchText)) continue;
-
-                filtered.Add(new McVersionItem
-                {
-                    Id = id,
-                    Type = type == "release" ? "正式版" : "快照",
-                    ReleaseDate = releaseTime.ToString("yyyy-MM-dd"),
-                    IsLatest = id == latestRelease,
-                    Url = v.GetProperty("url").GetString() ?? ""
-                });
+                if (!string.IsNullOrEmpty(_searchText) && !id.Contains(_searchText, StringComparison.OrdinalIgnoreCase)) continue;
+                filtered.Add(new McVersionItem { Id = id, Type = type == "release" ? "正式版" : "快照", ReleaseDate = releaseTime.ToString("yyyy-MM-dd"), IsLatest = id == latestRelease, Url = v.GetProperty("url").GetString() ?? "" });
             }
-
-            _mcVersions = new ObservableCollection<McVersionItem>(filtered);
+            var sorted = filtered.OrderByDescending(x => x.ReleaseDate).ToList();
+            _mcVersions.Clear();
+            foreach (var item in sorted) _mcVersions.Add(item);
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 DownloadVersionList.ItemsSource = _mcVersions;
-                VersionListStatus.Text = $"共 {_mcVersions.Count} 个版本（最新正式版: {latestRelease}）";
+                VersionListStatus.Text = _mcVersions.Count > 0 ? $"共 {sorted.Count} 个版本（最新正式版: {latestRelease}）" : "没有匹配的版本";
             });
         }
-        catch (Exception ex)
-        {
-            await Dispatcher.UIThread.InvokeAsync(() =>
-                VersionListStatus.Text = $"加载失败: {ex.Message}，请检查网络");
-        }
+        catch (Exception ex) { await Dispatcher.UIThread.InvokeAsync(() => VersionListStatus.Text = $"加载失败: {ex.Message}"); }
     }
-
-    private void OnRefreshVersionList(object? sender, RoutedEventArgs e) => _ = LoadMcVersionManifest();
-    private void OnFilterRelease(object? sender, RoutedEventArgs e) { _versionFilter = "release"; _ = LoadMcVersionManifest(); }
-    private void OnFilterSnapshot(object? sender, RoutedEventArgs e) { _versionFilter = "snapshot"; _ = LoadMcVersionManifest(); }
-    private void OnFilterAll(object? sender, RoutedEventArgs e) { _versionFilter = "all"; _ = LoadMcVersionManifest(); }
 
     private async void OnDownloadVersion(object? sender, RoutedEventArgs e)
     {
         if (_isDownloading) return;
-
         McVersionItem? item = null;
         await Dispatcher.UIThread.InvokeAsync(() => item = DownloadVersionList.SelectedItem as McVersionItem);
-        if (item == null)
-        {
-            await Dispatcher.UIThread.InvokeAsync(() => VersionListStatus.Text = "⚠ 请先选择一个版本");
-            return;
-        }
+        if (item == null) { await Dispatcher.UIThread.InvokeAsync(() => VersionListStatus.Text = "⚠ 请先从列表中选择一个版本"); return; }
 
         _isDownloading = true;
+        _downloadCts = new CancellationTokenSource();
         var versionId = item.Id;
         var versionUrl = item.Url;
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            DownloadProgressCard.IsVisible = true;
-            DownloadProgressText.Text = $"正在下载 Minecraft {versionId}...";
-            DownloadProgressBar.Value = 0;
-            DownloadProgressBar.IsIndeterminate = true;
-        });
+        await Dispatcher.UIThread.InvokeAsync(() => { GlobalProgressBorder.IsVisible = true; GlobalProgressText.Text = $"正在下载 {versionId}..."; GlobalProgressBar.Value = 0; GlobalProgressBar.IsIndeterminate = false; });
+        AppendConsole($"[下载] 开始下载 Minecraft {versionId}");
 
         try
         {
             var versionDir = Path.Combine(_gameDir, "versions", versionId);
             Directory.CreateDirectory(versionDir);
 
-            AppendConsole($"[下载] 开始下载 {versionId} 版本信息...");
-
             var versionJson = await _httpClient.GetStringAsync(versionUrl);
-            var versionJsonPath = Path.Combine(versionDir, $"{versionId}.json");
-            await File.WriteAllTextAsync(versionJsonPath, versionJson);
-
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                DownloadProgressBar.IsIndeterminate = false;
-                DownloadProgressBar.Value = 20;
-                DownloadProgressText.Text = $"正在下载 {versionId} 游戏文件... 20%";
-            });
+            await File.WriteAllTextAsync(Path.Combine(versionDir, $"{versionId}.json"), versionJson);
+            await UpdateProgress(5, $"解析版本信息... {versionId}");
 
             using var doc = JsonDocument.Parse(versionJson);
             var root = doc.RootElement;
 
-            if (root.TryGetProperty("downloads", out var downloads))
+            if (root.TryGetProperty("downloads", out var downloads) && downloads.TryGetProperty("client", out var client))
             {
-                if (downloads.TryGetProperty("client", out var client))
+                var jarUrl = client.GetProperty("url").GetString() ?? "";
+                var jarSize = client.GetProperty("size").GetInt64();
+                var jarPath = Path.Combine(versionDir, $"{versionId}.jar");
+
+                if (!string.IsNullOrEmpty(jarUrl) && !File.Exists(jarPath))
                 {
-                    var jarUrl = client.GetProperty("url").GetString() ?? "";
-                    var jarSize = client.GetProperty("size").GetInt64();
-                    var jarPath = Path.Combine(versionDir, $"{versionId}.jar");
-
-                    if (!string.IsNullOrEmpty(jarUrl))
+                    AppendConsole($"[下载] 下载主文件 ({jarSize / 1024 / 1024} MB)");
+                    using var response = await _httpClient.GetAsync(jarUrl, HttpCompletionOption.ResponseHeadersRead, _downloadCts.Token);
+                    response.EnsureSuccessStatusCode();
+                    var totalBytes = response.Content.Headers.ContentLength ?? jarSize;
+                    var readBytes = 0L;
+                    var buffer = new byte[65536];
+                    using var fileStream = File.Create(jarPath);
+                    using var stream = await response.Content.ReadAsStreamAsync(_downloadCts.Token);
+                    int lastPct = 5;
+                    while (true)
                     {
-                        AppendConsole($"[下载] 下载游戏主文件 ({jarSize / 1024 / 1024} MB)...");
-                        using var response = await _httpClient.GetAsync(jarUrl, HttpCompletionOption.ResponseHeadersRead);
-                        response.EnsureSuccessStatusCode();
-
-                        var totalBytes = response.Content.Headers.ContentLength ?? jarSize;
-                        var readBytes = 0L;
-                        var buffer = new byte[81920];
-                        using var fileStream = File.Create(jarPath);
-                        using var stream = await response.Content.ReadAsStreamAsync();
-
-                        int lastPercent = 20;
-                        while (true)
-                        {
-                            var bytesRead = await stream.ReadAsync(buffer);
-                            if (bytesRead == 0) break;
-                            await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead));
-                            readBytes += bytesRead;
-
-                            var percent = (int)(20 + 70.0 * readBytes / totalBytes);
-                            if (percent != lastPercent)
-                            {
-                                lastPercent = percent;
-                                await Dispatcher.UIThread.InvokeAsync(() =>
-                                {
-                                    DownloadProgressBar.Value = percent;
-                                    DownloadProgressText.Text = $"正在下载 {versionId}... {percent}% ({readBytes / 1024 / 1024} MB / {totalBytes / 1024 / 1024} MB)";
-                                });
-                            }
-                        }
+                        var bytesRead = await stream.ReadAsync(buffer, _downloadCts.Token);
+                        if (bytesRead == 0) break;
+                        await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), _downloadCts.Token);
+                        readBytes += bytesRead;
+                        var pct = (int)(5 + 60.0 * readBytes / totalBytes);
+                        if (pct != lastPct) { lastPct = pct; await UpdateProgress(pct, $"下载中... {pct}% ({readBytes / 1024 / 1024}/{totalBytes / 1024 / 1024} MB)"); }
                     }
                 }
+                else if (File.Exists(jarPath)) { AppendConsole("[下载] 主文件已存在，跳过"); await UpdateProgress(65, "主文件已存在"); }
+            }
 
-                if (downloads.TryGetProperty("client_mappings", out var mappings))
+            var libsDir = Path.Combine(_gameDir, "libraries");
+            Directory.CreateDirectory(libsDir);
+            if (root.TryGetProperty("libraries", out var libs))
+            {
+                var libList = libs.EnumerateArray().ToList();
+                var doneLibs = 0;
+                foreach (var lib in libList)
                 {
-                    var mappingsUrl = mappings.GetProperty("url").GetString() ?? "";
-                    if (!string.IsNullOrEmpty(mappingsUrl))
+                    if (!lib.TryGetProperty("downloads", out var dls) || !dls.TryGetProperty("artifact", out var art)) continue;
+                    var libUrl = art.GetProperty("url").GetString() ?? "";
+                    var libPath = art.TryGetProperty("path", out var lp) ? lp.GetString() ?? "" : "";
+                    if (string.IsNullOrEmpty(libUrl) || string.IsNullOrEmpty(libPath)) continue;
+                    var fullPath = Path.Combine(libsDir, libPath);
+                    if (!File.Exists(fullPath))
                     {
-                        var mappingsPath = Path.Combine(versionDir, $"{versionId}.txt");
-                        AppendConsole($"[下载] 下载映射文件...");
-                        var mappingsData = await _httpClient.GetByteArrayAsync(mappingsUrl);
-                        await File.WriteAllBytesAsync(mappingsPath, mappingsData);
+                        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+                        try { var data = await _httpClient.GetByteArrayAsync(libUrl, _downloadCts.Token); await File.WriteAllBytesAsync(fullPath, data, _downloadCts.Token); }
+                        catch { }
+                    }
+                    doneLibs++;
+                    if (doneLibs % 20 == 0 || doneLibs == libList.Count)
+                    {
+                        var pct = (int)(65 + 30.0 * doneLibs / libList.Count);
+                        await UpdateProgress(pct, $"下载库文件 {doneLibs}/{libList.Count}");
                     }
                 }
             }
 
-            if (root.TryGetProperty("libraries", out var libraries))
-            {
-                var libCount = libraries.GetArrayLength();
-                var libIndex = 0;
-                var libsDir = Path.Combine(_gameDir, "libraries");
-                Directory.CreateDirectory(libsDir);
+            var nativesDir = Path.Combine(versionDir, "natives");
+            Directory.CreateDirectory(nativesDir);
 
-                foreach (var lib in libraries.EnumerateArray())
-                {
-                    libIndex++;
-                    if (lib.TryGetProperty("downloads", out var libDls))
-                    {
-                        if (libDls.TryGetProperty("artifact", out var artifact))
-                        {
-                            var libUrl = artifact.GetProperty("url").GetString() ?? "";
-                            var libPath = artifact.TryGetProperty("path", out var p) ? p.GetString() ?? "" : "";
-
-                            if (!string.IsNullOrEmpty(libUrl) && !string.IsNullOrEmpty(libPath))
-                            {
-                                var fullLibPath = Path.Combine(libsDir, libPath);
-                                if (!File.Exists(fullLibPath))
-                                {
-                                    Directory.CreateDirectory(Path.GetDirectoryName(fullLibPath)!);
-                                    try
-                                    {
-                                        var libData = await _httpClient.GetByteArrayAsync(libUrl);
-                                        await File.WriteAllBytesAsync(fullLibPath, libData);
-                                    }
-                                    catch { }
-                                }
-                            }
-                        }
-                    }
-
-                    var libPercent = (int)(90 + 10.0 * libIndex / libCount);
-                    if (libIndex % 5 == 0 || libIndex == libCount)
-                    {
-                        await Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            DownloadProgressBar.Value = Math.Min(libPercent, 99);
-                            DownloadProgressText.Text = $"下载库文件 {libIndex}/{libCount}...";
-                        });
-                    }
-                }
-            }
-
+            await UpdateProgress(97, "完成...");
             _installedVersions.Add(new VersionItem { Id = versionId, Name = versionId, Type = item.Type, SizeMB = 250, IsValid = true });
-            await Dispatcher.UIThread.InvokeAsync(async () =>
-            {
-                VersionList.ItemsSource = null;
-                VersionList.ItemsSource = _installedVersions;
-                var names = _installedVersions.Select(v => v.Name).ToList();
-                HomeVersionCombo.ItemsSource = names;
-                LaunchVersionCombo.ItemsSource = names;
-                if (names.Count > 0)
-                {
-                    HomeVersionCombo.SelectedIndex = 0;
-                    LaunchVersionCombo.SelectedIndex = 0;
-                }
-                StatVersions.Text = _installedVersions.Count.ToString();
-
-                DownloadProgressBar.Value = 100;
-                DownloadProgressText.Text = $"✅ {versionId} 下载完成！";
-            });
-
-            AppendConsole($"[下载] ✅ {versionId} 下载完成，已保存到 {versionDir}");
-        }
-        catch (Exception ex)
-        {
             await Dispatcher.UIThread.InvokeAsync(() =>
-                DownloadProgressText.Text = $"❌ 下载失败: {ex.Message}");
-            AppendConsole($"[下载] ❌ 失败: {ex.Message}");
+            {
+                VersionList.ItemsSource = null; VersionList.ItemsSource = _installedVersions;
+                var names = _installedVersions.Select(v => v.Name).ToList();
+                HomeVersionCombo.ItemsSource = names; LaunchVersionCombo.ItemsSource = names;
+                if (names.Count > 0) { HomeVersionCombo.SelectedIndex = 0; LaunchVersionCombo.SelectedIndex = 0; }
+                StatVersions.Text = _installedVersions.Count.ToString();
+                GlobalProgressBar.Value = 100;
+                GlobalProgressText.Text = $"✅ {versionId} 下载完成";
+            });
+            AppendConsole($"[下载] ✅ {versionId} 下载完成");
+            await Task.Delay(3000);
+            await Dispatcher.UIThread.InvokeAsync(() => GlobalProgressBorder.IsVisible = false);
         }
-        finally
-        {
-            _isDownloading = false;
-        }
+        catch (OperationCanceledException) { AppendConsole("[下载] 下载已取消"); await Dispatcher.UIThread.InvokeAsync(() => GlobalProgressBorder.IsVisible = false); }
+        catch (Exception ex) { AppendConsole($"[下载] ❌ 失败: {ex.Message}"); await Dispatcher.UIThread.InvokeAsync(() => GlobalProgressText.Text = $"❌ 失败: {ex.Message}"); }
+        finally { _isDownloading = false; _downloadCts?.Dispose(); _downloadCts = null; }
     }
 
-    private void LoadResources(string category, ItemsControl target)
+    private async Task UpdateProgress(int percent, string text) { await Dispatcher.UIThread.InvokeAsync(() => { GlobalProgressBar.Value = Math.Min(percent, 100); GlobalProgressText.Text = text; }); }
+
+    private void LoadResources(string category)
     {
         _currentResources.Clear();
         var items = category switch
         {
-            "mod" => GetSampleMods(),
+            "mod" => FilterMods(GetAllMods()),
             "resourcepack" => GetSampleResourcePacks(),
             "shader" => GetSampleShaders(),
             "texture" => GetSampleTextures(),
@@ -425,192 +329,236 @@ public partial class MainWindow : Window
             _ => new List<ResourceItem>()
         };
         foreach (var item in items) _currentResources.Add(item);
-        target.ItemsSource = _currentResources;
+        switch (category)
+        {
+            case "mod": ModList.ItemsSource = _currentResources; break;
+            case "resourcepack": ResourcePackList.ItemsSource = _currentResources; break;
+            case "shader": ShaderList.ItemsSource = _currentResources; break;
+            case "texture": TextureList.ItemsSource = _currentResources; break;
+            case "modpack": ModpackList.ItemsSource = _currentResources; break;
+        }
     }
 
-    private static List<ResourceItem> GetSampleMods() => new()
+    private List<ResourceItem> FilterMods(List<ResourceItem> mods)
     {
-        new() { Id = "optifine", Name = "OptiFine", Description = "高清修复，提升帧率和画质", Downloads = "2.1M", Likes = "89K", GameVersion = "1.20.4" },
-        new() { Id = "jei", Name = "Just Enough Items", Description = "物品合成表查看", Downloads = "1.8M", Likes = "72K", GameVersion = "1.20.4" },
-        new() { Id = "sodium", Name = "Sodium", Description = "渲染优化模组，大幅提升帧率", Downloads = "1.5M", Likes = "95K", GameVersion = "1.20.4" },
-        new() { Id = "create", Name = "Create", Description = "机械自动化与动力系统", Downloads = "980K", Likes = "67K", GameVersion = "1.20.1" },
-        new() { Id = "applied-energistics", Name = "Applied Energistics 2", Description = "数字存储与自动化", Downloads = "750K", Likes = "45K", GameVersion = "1.20.4" },
-        new() { Id = "waystones", Name = "Waystones", Description = "传送点系统", Downloads = "620K", Likes = "38K", GameVersion = "1.20.4" },
-        new() { Id = "biomes-o-plenty", Name = "Biomes O' Plenty", Description = "80+ 新生物群系", Downloads = "580K", Likes = "42K", GameVersion = "1.20.4" },
-        new() { Id = "tinkers-construct", Name = "Tinkers' Construct", Description = "自定义工具与武器", Downloads = "520K", Likes = "51K", GameVersion = "1.20.1" },
-    };
+        if (string.IsNullOrEmpty(_modSearchText)) return mods;
+        return mods.Where(m => m.ItemName.Contains(_modSearchText, StringComparison.OrdinalIgnoreCase) || m.Description.Contains(_modSearchText, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
 
-    private static List<ResourceItem> GetSampleResourcePacks() => new()
+    private void OnSearchModsChanged(object? s, TextChangedEventArgs e) { _modSearchText = SearchModsInput?.Text?.Trim() ?? ""; LoadResources("mod"); }
+    private void OnClearModSearch(object? s, RoutedEventArgs e) { SearchModsInput.Text = ""; _modSearchText = ""; LoadResources("mod"); }
+    private void OnModCategory(object? s, RoutedEventArgs e) { if (s is Button btn && btn.Tag is string tag) { _modSearchText = tag; SearchModsInput.Text = tag; LoadResources("mod"); } }
+
+    private static ResourceItem MakeMod(string id, string name, string desc, string dl, string lk, string ver) => new() { ItemId = id, ItemName = name, Description = desc, Downloads = dl, Likes = lk, GameVersion = ver };
+    private static ResourceItem MakeRp(string id, string name, string desc, string dl, string lk, string ver) => new() { ItemId = id, ItemName = name, Description = desc, Downloads = dl, Likes = lk, GameVersion = ver };
+    private static ResourceItem MakeSh(string id, string name, string desc, string dl, string lk, string ver) => new() { ItemId = id, ItemName = name, Description = desc, Downloads = dl, Likes = lk, GameVersion = ver };
+    private static ResourceItem MakeTx(string id, string name, string desc, string dl, string lk, string ver) => new() { ItemId = id, ItemName = name, Description = desc, Downloads = dl, Likes = lk, GameVersion = ver };
+    private static ResourceItem MakeMp(string id, string name, string desc, string dl, string lk, string ver) => new() { ItemId = id, ItemName = name, Description = desc, Downloads = dl, Likes = lk, GameVersion = ver };
+
+    private static List<ResourceItem> GetAllMods()
     {
-        new() { Id = "faithful", Name = "Faithful 32x", Description = "经典高清材质，保持原版风格", Downloads = "3.2M", Likes = "120K", GameVersion = "1.20.4" },
-        new() { Id = "vanillatweaks", Name = "Vanilla Tweaks", Description = "原版微调资源包", Downloads = "1.5M", Likes = "65K", GameVersion = "1.20.4" },
-        new() { Id = "stay-true", Name = "Stay True", Description = "保持原版感觉的优化", Downloads = "450K", Likes = "28K", GameVersion = "1.20.4" },
-    };
+        var r = new List<ResourceItem>();
+        r.Add(MakeMod("optifine", "OptiFine", "高清修复，提升帧率和画质", "2.1M", "89K", "1.20.4"));
+        r.Add(MakeMod("sodium", "Sodium", "渲染优化模组，大幅提升帧率", "1.5M", "95K", "1.20.4"));
+        r.Add(MakeMod("indium", "Indium", "Sodium 渲染优化配件", "1.2M", "42K", "1.20.4"));
+        r.Add(MakeMod("jei", "Just Enough Items", "物品合成表查看", "1.8M", "72K", "1.20.4"));
+        r.Add(MakeMod("emi", "EMI", "新版物品合成表", "650K", "38K", "1.20.4"));
+        r.Add(MakeMod("create", "Create", "机械自动化与动力系统", "980K", "67K", "1.20.1"));
+        r.Add(MakeMod("ae2", "Applied Energistics 2", "数字存储与自动化", "750K", "45K", "1.20.4"));
+        r.Add(MakeMod("mekanism", "Mekanism", "工业科技模组", "620K", "41K", "1.20.4"));
+        r.Add(MakeMod("thermal", "Thermal Series", "热能科技模组包", "580K", "39K", "1.20.4"));
+        r.Add(MakeMod("waystones", "Waystones", "传送点系统", "620K", "38K", "1.20.4"));
+        r.Add(MakeMod("bop", "Biomes O' Plenty", "80+ 新生物群系", "580K", "42K", "1.20.4"));
+        r.Add(MakeMod("tconstruct", "Tinkers' Construct", "自定义工具与武器", "520K", "51K", "1.20.1"));
+        r.Add(MakeMod("ars_nouveau", "Ars Nouveau", "魔法模组", "480K", "35K", "1.20.4"));
+        r.Add(MakeMod("rei", "REI", "物品查看器", "890K", "55K", "1.20.4"));
+        return r;
+    }
 
-    private static List<ResourceItem> GetSampleShaders() => new()
+    private static List<ResourceItem> GetSampleResourcePacks()
     {
-        new() { Id = "bsl", Name = "BSL Shaders", Description = "温暖柔和的光影效果", Downloads = "2.8M", Likes = "95K", GameVersion = "1.20.4" },
-        new() { Id = "seus-renewed", Name = "SEUS Renewed", Description = "经典写实光影", Downloads = "2.1M", Likes = "88K", GameVersion = "1.20.4" },
-        new() { Id = "complementary", Name = "Complementary Shaders", Description = "互补光影，性能与画质兼顾", Downloads = "1.9M", Likes = "76K", GameVersion = "1.20.4" },
-        new() { Id = "sildurs", Name = "Sildur's Vibrant", Description = "鲜艳色彩光影", Downloads = "1.3M", Likes = "52K", GameVersion = "1.20.4" },
-        new() { Id = "ptgi", Name = "SEUS PTGI", Description = "光线追踪光影", Downloads = "890K", Likes = "71K", GameVersion = "1.20.4" },
-    };
+        var r = new List<ResourceItem>();
+        r.Add(MakeRp("faithful", "Faithful 32x", "经典高清材质，保持原版风格", "3.2M", "120K", "1.20.4"));
+        r.Add(MakeRp("faithful-64", "Faithful 64x", "64x 高清版", "1.8M", "72K", "1.20.4"));
+        r.Add(MakeRp("vanillatweaks", "Vanilla Tweaks", "原版微调资源包", "1.5M", "65K", "1.20.4"));
+        r.Add(MakeRp("staytrue", "Stay True", "保持原版感觉的优化", "450K", "28K", "1.20.4"));
+        return r;
+    }
 
-    private static List<ResourceItem> GetSampleTextures() => new()
+    private static List<ResourceItem> GetSampleShaders()
     {
-        new() { Id = "lb-photo-realism", Name = "LB Photo Realism", Description = "超写实 64x 材质", Downloads = "1.2M", Likes = "45K", GameVersion = "1.20.4" },
-        new() { Id = "soartex-fanver", Name = "Soartex Fanver", Description = "平滑风格 64x 材质", Downloads = "890K", Likes = "38K", GameVersion = "1.20.4" },
-        new() { Id = "rotr", Name = "ROTR", Description = "写实风格材质包", Downloads = "670K", Likes = "29K", GameVersion = "1.20.4" },
-    };
+        var r = new List<ResourceItem>();
+        r.Add(MakeSh("bsl", "BSL Shaders", "温暖柔和的光影效果", "2.8M", "95K", "1.20.4"));
+        r.Add(MakeSh("seus-renewed", "SEUS Renewed", "经典写实光影", "2.1M", "88K", "1.20.4"));
+        r.Add(MakeSh("complementary", "Complementary Shaders", "互补光影，性能与画质兼顾", "1.9M", "76K", "1.20.4"));
+        r.Add(MakeSh("sildurs", "Sildur's Vibrant", "鲜艳色彩光影", "1.3M", "52K", "1.20.4"));
+        r.Add(MakeSh("chocapic", "Chocapic13' Shaders", "轻量高性能光影", "1.1M", "48K", "1.20.4"));
+        return r;
+    }
 
-    private static List<ResourceItem> GetSampleModpacks() => new()
+    private static List<ResourceItem> GetSampleTextures()
     {
-        new() { Id = "rlcraft", Name = "RLCraft", Description = "硬核生存整合包", Downloads = "3.5M", Likes = "110K", GameVersion = "1.12.2" },
-        new() { Id = "all-the-mods-9", Name = "All The Mods 9", Description = "大型科技魔法整合", Downloads = "1.2M", Likes = "52K", GameVersion = "1.20.1" },
-        new() { Id = "better-mc", Name = "Better MC", Description = "增强原版体验", Downloads = "980K", Likes = "67K", GameVersion = "1.20.4" },
-        new() { Id = "ftb-revelation", Name = "FTB Revelation", Description = "经典科技整合", Downloads = "750K", Likes = "41K", GameVersion = "1.12.2" },
-        new() { Id = "vault-hunters", Name = "Vault Hunters", Description = "RPG 冒险整合", Downloads = "620K", Likes = "48K", GameVersion = "1.18.2" },
-    };
+        var r = new List<ResourceItem>();
+        r.Add(MakeTx("lbpr", "LB Photo Realism", "超写实 64x 材质", "1.2M", "45K", "1.20.4"));
+        r.Add(MakeTx("soartex", "Soartex Fanver", "平滑风格 64x 材质", "890K", "38K", "1.20.4"));
+        r.Add(MakeTx("rotr", "ROTR", "写实风格材质包", "670K", "29K", "1.20.4"));
+        return r;
+    }
 
-    private void OnSearchMods(object? sender, RoutedEventArgs e) { }
-    private void OnModCategory(object? sender, RoutedEventArgs e) { }
-
-    private async void OnDownloadResource(object? sender, RoutedEventArgs e)
+    private static List<ResourceItem> GetSampleModpacks()
     {
-        if (sender is Button btn && btn.Tag is string id)
+        var r = new List<ResourceItem>();
+        r.Add(MakeMp("atm9", "All The Mods 9", "大型科技魔法整合", "1.2M", "52K", "1.20.1"));
+        r.Add(MakeMp("atm10", "All The Mods 10", "ATM 系列最新作", "890K", "41K", "1.20.4"));
+        r.Add(MakeMp("rlcraft", "RLCraft", "硬核生存整合包", "3.5M", "110K", "1.12.2"));
+        r.Add(MakeMp("better-mc", "Better MC (BMC)", "增强原版体验", "980K", "67K", "1.20.4"));
+        r.Add(MakeMp("vault", "Vault Hunters 3", "RPG 冒险整合", "620K", "48K", "1.18.2"));
+        r.Add(MakeMp("enigmatica2", "Enigmatica 2", "经典科技整合", "750K", "41K", "1.12.2"));
+        return r;
+    }
+
+    private async void OnDownloadResource(object? s, RoutedEventArgs e)
+    {
+        if (s is Button btn && btn.Tag is string id)
         {
-            var origContent = btn.Content;
             btn.Content = "下载中...";
             btn.IsEnabled = false;
-            await Task.Delay(1500);
+            await Task.Delay(1200);
             btn.Content = "✅ 已下载";
             AppendConsole($"[资源] {id} 下载完成");
         }
     }
 
-    private async void OnRefreshVersions(object? sender, RoutedEventArgs e) => await LoadInstalledVersions();
-
-    private void OnSelectVersion(object? sender, RoutedEventArgs e)
+    private async void OnRefreshVersions(object? s, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is string versionId)
+        AppendConsole("[版本] 正在扫描已安装版本...");
+        var dir = GameDirInput.Text?.Trim() ?? _gameDir;
+        await _versionService.ScanVersions(dir);
+        await LoadInstalledVersions();
+        AppendConsole($"[版本] 扫描完成，共 {_installedVersions.Count} 个版本");
+    }
+
+    private void OnSelectVersion(object? s, RoutedEventArgs e)
+    {
+        if (s is Button btn && btn.Tag is string versionId)
         {
             for (int i = 0; i < _installedVersions.Count; i++)
             {
-                if (_installedVersions[i].Id == versionId)
-                {
-                    LaunchVersionCombo.SelectedIndex = i;
-                    HomeVersionCombo.SelectedIndex = i;
-                    break;
-                }
+                if (_installedVersions[i].Id == versionId) { LaunchVersionCombo.SelectedIndex = i; HomeVersionCombo.SelectedIndex = i; break; }
             }
             SwitchPage("settings");
         }
     }
 
-    private async void OnLaunchGame(object? sender, RoutedEventArgs e)
+    private async void OnLaunchGame(object? s, RoutedEventArgs e)
     {
         var versionName = LaunchVersionCombo.SelectedItem as string ?? HomeVersionCombo.SelectedItem as string;
-        if (string.IsNullOrEmpty(versionName))
-        {
-            AppendConsole("❌ 请先下载并选择一个游戏版本！");
-            return;
-        }
+        if (string.IsNullOrEmpty(versionName)) { AppendConsole("❌ 请先下载并选择一个游戏版本！"); return; }
 
         var playerName = PlayerNameInput.Text?.Trim();
-        if (string.IsNullOrEmpty(playerName)) playerName = "Player";
+        if (string.IsNullOrEmpty(playerName)) playerName = "Steve";
         var memoryMb = (int)MemorySlider.Value * 1024;
         var gameDir = GameDirInput.Text?.Trim() ?? _gameDir;
-        var javaPath = JavaPathInput.Text?.Trim() ?? "";
+        var javaPath = JavaPathInput.Text?.Trim();
 
-        if (string.IsNullOrEmpty(javaPath))
-        {
-            javaPath = FindJava();
-            if (string.IsNullOrEmpty(javaPath))
-            {
-                AppendConsole("❌ 未找到 Java，请在设置中指定 Java 路径");
-                return;
-            }
-        }
+        if (string.IsNullOrEmpty(javaPath)) { javaPath = FindJava(); if (string.IsNullOrEmpty(javaPath)) { AppendConsole("❌ 未找到 Java！请在设置中指定 Java 路径"); return; } }
 
-        var jarPath = Path.Combine(gameDir, "versions", versionName, $"{versionName}.jar");
-        if (!File.Exists(jarPath))
-        {
-            AppendConsole($"❌ 未找到版本文件: {jarPath}\n请先在下载页面下载该版本");
-            return;
-        }
+        var versionDir = Path.Combine(gameDir, "versions", versionName);
+        var jarPath = Path.Combine(versionDir, $"{versionName}.jar");
+        var jsonPath = Path.Combine(versionDir, $"{versionName}.json");
+        var nativesDir = Path.Combine(versionDir, "natives");
 
-        AppendConsole($"[启动] 正在启动 Minecraft {versionName}...");
-        AppendConsole($"[启动] 玩家: {playerName}");
-        AppendConsole($"[启动] Java: {javaPath}");
-        AppendConsole($"[启动] 内存: -Xmx{memoryMb}m");
-        AppendConsole($"[启动] 目录: {gameDir}");
+        if (!File.Exists(jarPath)) { AppendConsole($"❌ 版本文件不存在: {jarPath}"); AppendConsole("💡 请先在「下载」页面下载该版本"); return; }
+        if (!File.Exists(jsonPath)) { AppendConsole($"❌ 版本 JSON 不存在: {jsonPath}"); return; }
+
+        AppendConsole($"[启动] 准备启动 Minecraft {versionName}");
+        AppendConsole($"[启动] 玩家: {playerName} | 内存: {memoryMb}MB | Java: {javaPath}");
 
         try
         {
-            var args = $"-Xmx{memoryMb}m -Xms{memoryMb / 2}m " +
-                       $"-Djava.library.path=\"{Path.Combine(gameDir, "versions", versionName, "natives")}\" " +
-                       $"-cp \"{jarPath}\" " +
-                       $"net.minecraft.client.main.Main " +
-                       $"--username {playerName} " +
-                       $"--version {versionName} " +
-                       $"--gameDir \"{gameDir}\" " +
-                       $"--assetsDir \"{Path.Combine(gameDir, "assets")}\"";
+            var jsonContent = await File.ReadAllTextAsync(jsonPath);
+            using var doc = JsonDocument.Parse(jsonContent);
+            var root = doc.RootElement;
+            var cpEntries = new List<string> { jarPath };
+            var libsDir = Path.Combine(gameDir, "libraries");
 
-            var psi = new ProcessStartInfo
+            if (root.TryGetProperty("libraries", out var libs))
             {
-                FileName = javaPath,
-                Arguments = args,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
+                foreach (var lib in libs.EnumerateArray())
+                {
+                    if (!lib.TryGetProperty("downloads", out var dls) || !dls.TryGetProperty("artifact", out var art)) continue;
+                    var path = art.TryGetProperty("path", out var p) ? p.GetString() ?? "" : "";
+                    if (string.IsNullOrEmpty(path)) continue;
+                    var fullPath = Path.Combine(libsDir, path);
+                    if (File.Exists(fullPath)) cpEntries.Add(fullPath);
+                }
+            }
 
-            var process = new Process { StartInfo = psi };
-            process.OutputDataReceived += (_, ea) => { if (ea.Data != null) AppendConsole($"[MC] {ea.Data}"); };
-            process.ErrorDataReceived += (_, ea) => { if (ea.Data != null) AppendConsole($"[MC-ERR] {ea.Data}"); };
+            var cp = string.Join(Path.PathSeparator.ToString(), cpEntries);
+            var assetIndex = GetAssetIndex(jsonContent);
 
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
+            var args = $"-XX:+UseG1GC -XX:MaxGCPauseMills=200 -Xmx{memoryMb}m -Xms{memoryMb / 2}m " +
+                       $"-Dminecraft.client.jar=\"{jarPath}\" " +
+                       $"-Djava.library.path=\"{nativesDir}\" " +
+                       $"-cp \"{cp}\" " +
+                       $"net.minecraft.client.main.Main " +
+                       $"--username \"{playerName}\" --version \"{versionName}\" " +
+                       $"--gameDir \"{gameDir}\" --assetsDir \"{Path.Combine(gameDir, "assets")}\" " +
+                       $"--assetIndex {assetIndex} --uuid {Guid.NewGuid():N} " +
+                       $"--accessToken 0 --userType mojang --versionType release";
 
-            AppendConsole($"[启动] ✅ Minecraft 已启动 (PID: {process.Id})");
+            var psi = new ProcessStartInfo { FileName = javaPath, Arguments = args, UseShellExecute = true, CreateNoWindow = false, WorkingDirectory = gameDir };
+            var process = Process.Start(psi);
+            AppendConsole(process != null ? $"[启动] ✅ Minecraft 已启动 (PID: {process.Id})" : "[启动] ❌ 无法启动进程");
         }
-        catch (Exception ex)
+        catch (Exception ex) { AppendConsole($"[启动] ❌ 启动失败: {ex.Message}"); }
+    }
+
+    private static string GetAssetIndex(string json)
+    {
+        try
         {
-            AppendConsole($"[启动] ❌ 启动失败: {ex.Message}");
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("assetIndex", out var ai)) return ai.TryGetProperty("id", out var id) ? id.GetString() ?? "1.20" : "1.20";
+            if (doc.RootElement.TryGetProperty("assets", out var assets)) return assets.GetString() ?? "1.20";
         }
+        catch { }
+        return "1.20";
     }
 
     private static string? FindJava()
     {
-        var paths = new[]
+        var searchPaths = new[]
         {
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Java"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Java"),
-            "/usr/bin/java",
-            "/usr/lib/jvm"
+            @"C:\Program Files\Eclipse Adoptium",
+            @"C:\Program Files\Amazon Corretto",
+            @"C:\Program Files\Java",
         };
-
-        foreach (var dir in paths)
+        foreach (var baseDir in searchPaths)
         {
-            if (!Directory.Exists(dir)) continue;
-            var javas = Directory.GetFiles(dir, "javaw.exe", SearchOption.AllDirectories)
-                .Concat(Directory.GetFiles(dir, "java.exe", SearchOption.AllDirectories))
-                .Concat(Directory.GetFiles(dir, "java", SearchOption.AllDirectories));
-            var java = javas.FirstOrDefault();
-            if (java != null) return java;
+            if (!Directory.Exists(baseDir)) continue;
+            try
+            {
+                foreach (var dir in Directory.GetDirectories(baseDir))
+                {
+                    var javaw = Path.Combine(dir, "bin", "javaw.exe");
+                    var java = Path.Combine(dir, "bin", "java.exe");
+                    if (File.Exists(javaw)) return javaw;
+                    if (File.Exists(java)) return java;
+                }
+            }
+            catch { }
         }
-
         try
         {
-            using var proc = Process.Start(new ProcessStartInfo("which", "java") { RedirectStandardOutput = true });
+            using var proc = Process.Start(new ProcessStartInfo("where", "java") { RedirectStandardOutput = true });
             proc?.WaitForExit(3000);
-            var result = proc?.StandardOutput.ReadLine()?.Trim();
-            if (!string.IsNullOrEmpty(result)) return result;
+            var path = proc?.StandardOutput.ReadLine()?.Trim();
+            if (!string.IsNullOrEmpty(path) && File.Exists(path)) return path;
         }
         catch { }
-
         return null;
     }
 
@@ -619,69 +567,43 @@ public partial class MainWindow : Window
         Dispatcher.UIThread.Post(() =>
         {
             ConsoleOutput.Text += "\n" + text;
-            ConsoleScroll.ScrollToEnd();
+            if (ConsoleOutput.Parent is ScrollViewer sv) sv.ScrollToEnd();
         });
     }
 
-    private async void OnBrowseJava(object? sender, RoutedEventArgs e)
+    private async void OnBrowseJava(object? s, RoutedEventArgs e)
     {
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "选择 Java 可执行文件",
-            AllowMultiple = false,
-            FileTypeFilter = new[] { new FilePickerFileType("Java") { Patterns = new[] { "javaw.exe", "java.exe", "java" } } }
-        });
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions { Title = "选择 Java 可执行文件", AllowMultiple = false, FileTypeFilter = new[] { new FilePickerFileType("Java") { Patterns = new[] { "javaw.exe", "java.exe", "java" } } } });
         if (files.Count > 0) JavaPathInput.Text = files[0].Path.LocalPath;
     }
 
-    private async void OnBrowseGameDir(object? sender, RoutedEventArgs e)
+    private async void OnBrowseGameDir(object? s, RoutedEventArgs e)
     {
         var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "选择游戏目录", AllowMultiple = false });
         if (folders.Count > 0) GameDirInput.Text = folders[0].Path.LocalPath;
     }
 
-    private async void OnLogin(object? sender, RoutedEventArgs e)
+    private async void OnLogin(object? s, RoutedEventArgs e)
     {
         var email = SettingsEmail.Text?.Trim();
         var password = SettingsPassword.Text?.Trim();
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-        {
-            LoginStatus.Text = "⚠ 请输入邮箱和密码";
-            return;
-        }
-
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password)) { LoginStatus.Text = "⚠ 请输入邮箱和密码"; return; }
         try
         {
             using var scope = _serviceProvider.CreateScope();
             var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
             var result = await authService.Login(new LoginRequest { Email = email, Password = password });
-            if (result.Success && result.User != null)
-            {
-                UserNameText.Text = result.User.Username;
-                UserStatus.Text = "已登录";
-                LoginStatus.Text = "✅ 登录成功！";
-            }
-            else
-            {
-                LoginStatus.Text = $"❌ 登录失败: {result.Error}";
-            }
+            if (result.Success && result.User != null) { UserNameText.Text = result.User.Username; UserStatus.Text = "已登录"; LoginStatus.Text = "✅ 登录成功！"; }
+            else LoginStatus.Text = $"❌ 登录失败: {result.Error}";
         }
-        catch (Exception ex)
-        {
-            LoginStatus.Text = $"❌ 登录出错: {ex.Message}";
-        }
+        catch (Exception ex) { LoginStatus.Text = $"❌ 登录出错: {ex.Message}"; }
     }
 
-    private async void OnRegister(object? sender, RoutedEventArgs e)
+    private async void OnRegister(object? s, RoutedEventArgs e)
     {
         var email = SettingsEmail.Text?.Trim();
         var password = SettingsPassword.Text?.Trim();
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-        {
-            LoginStatus.Text = "⚠ 请输入邮箱和密码";
-            return;
-        }
-
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password)) { LoginStatus.Text = "⚠ 请输入邮箱和密码"; return; }
         try
         {
             using var scope = _serviceProvider.CreateScope();
@@ -690,43 +612,12 @@ public partial class MainWindow : Window
             var result = await authService.Register(new RegisterRequest { Email = email, Password = password, Username = username });
             LoginStatus.Text = result.Success ? "✅ 注册成功！请登录" : $"❌ 注册失败: {result.Error}";
         }
-        catch (Exception ex)
-        {
-            LoginStatus.Text = $"❌ 注册出错: {ex.Message}";
-        }
+        catch (Exception ex) { LoginStatus.Text = $"❌ 注册出错: {ex.Message}"; }
     }
 
-    private void OnSaveSettings(object? sender, RoutedEventArgs e)
-    {
-        if (!string.IsNullOrEmpty(GameDirInput.Text)) _gameDir = GameDirInput.Text;
-        LoginStatus.Text = "✅ 设置已保存";
-    }
+    private void OnSaveSettings(object? s, RoutedEventArgs e) { if (!string.IsNullOrEmpty(GameDirInput.Text)) _gameDir = GameDirInput.Text; LoginStatus.Text = "✅ 设置已保存"; }
 }
 
-public class VersionItem
-{
-    public string Id { get; set; } = "";
-    public string Name { get; set; } = "";
-    public string Type { get; set; } = "Release";
-    public long SizeMB { get; set; }
-    public bool IsValid { get; set; }
-}
-
-public class McVersionItem
-{
-    public string Id { get; set; } = "";
-    public string Type { get; set; } = "";
-    public string ReleaseDate { get; set; } = "";
-    public bool IsLatest { get; set; }
-    public string Url { get; set; } = "";
-}
-
-public class ResourceItem
-{
-    public string Id { get; set; } = "";
-    public string Name { get; set; } = "";
-    public string Description { get; set; } = "";
-    public string Downloads { get; set; } = "";
-    public string Likes { get; set; } = "";
-    public string GameVersion { get; set; } = "";
-}
+public class VersionItem { public string Id { get; set; } = ""; public string Name { get; set; } = ""; public string Type { get; set; } = "Release"; public long SizeMB { get; set; } public bool IsValid { get; set; } }
+public class McVersionItem { public string Id { get; set; } = ""; public string Type { get; set; } = ""; public string ReleaseDate { get; set; } = ""; public bool IsLatest { get; set; } public string Url { get; set; } = ""; }
+public class ResourceItem { public string ItemId { get; set; } = ""; public string ItemName { get; set; } = ""; public string Description { get; set; } = ""; public string Downloads { get; set; } = ""; public string Likes { get; set; } = ""; public string GameVersion { get; set; } = ""; }
